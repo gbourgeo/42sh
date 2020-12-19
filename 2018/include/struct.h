@@ -6,7 +6,7 @@
 /*   By: gbourgeo <gbourgeo@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2018/11/22 02:42:37 by rfontain          #+#    #+#             */
-/*   Updated: 2019/04/29 13:34:44 by rfontain         ###   ########.fr       */
+/*   Updated: 2020/10/08 21:38:54 by gbourgeo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -21,7 +21,6 @@
 # ifdef __linux
 #  include <time.h>
 #  define NSIG _NSIG
-
 # endif
 
 # define LEFT 1 << 0
