@@ -45,7 +45,7 @@ static void		command_exec_job(char *name, t_jobs *job,
 	if (signal_to_default() == 1)
 		exit(EXIT_FAILURE);
 	if (job->foreground)
-		command_rd_forked(((t_execute *)p->exec)->redirection, e);
+		command_rd_forked(exec->redirection, e);
 	command_execve(name, job, p, e);
 }
 

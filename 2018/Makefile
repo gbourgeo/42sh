@@ -20,7 +20,11 @@ ifeq ($(DEBUG),yes)
 	CFLAGS += -g3 -O0 -fno-inline -DDEBUG
 endif
 ifeq ($(SAN),yes)
-	SANITIZE := -fsanitize=address -fno-omit-frame-pointer -fno-optimize-sibling-calls
+	SANITIZE_LINK := -fsanitize=address -fno-omit-frame-pointer -fno-optimize-sibling-calls
+endif
+ifeq ($(COVERAGE),yes)
+	CFLAGS += -fprofile-arcs -ftest-coverage -O0
+	COVERAGE_LINK := -lgcov --coverage
 endif
 
 LIBFT_PATH = libft
@@ -428,7 +432,7 @@ $(PRINTF_LIB):
 	@make -C $(PRINTF_PATH)
 
 $(NAME): $(NEWLINE) $(OBJS)
-	@$(CC) $^ -o $@ $(LIBFT_LINK) $(PRINTF_LINK) $(SANITIZE)
+	@$(CC) $^ -o $@ $(LIBFT_LINK) $(PRINTF_LINK) $(SANITIZE_LINK) $(COVERAGE_LINK)
 	@echo -e "\n$(GREEN) Compiling $(YELLOW)[ $(RESET)$(NAME)$(YELLOW) ] $(OK) $(RESET)"
 
 $(OBJS_DIR)%.o: $(SRCS_DIR)%.c
@@ -554,4 +558,4 @@ nn:
 	norminette $(SRCS_DIR)
 	norminette $(INC_DIR)
 
-.PHONY: clean fclean all re
+.PHONY: clean fclean all re debug nn

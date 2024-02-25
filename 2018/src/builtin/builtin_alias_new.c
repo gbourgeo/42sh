@@ -27,8 +27,8 @@ t_alias			*alias_new(char *key, char *value, t_alias *prev, t_alias *next)
 	}
 	if (value && alias_set_value(value, new))
 	{
-		free(new);
 		free(new->key);
+		free(new);
 		return (NULLALIAS);
 	}
 	new->next = next;

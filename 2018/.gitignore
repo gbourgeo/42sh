@@ -1,0 +1,4 @@
+42sh
+*.a
+objs/
+.deps/

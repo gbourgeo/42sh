@@ -21,6 +21,7 @@
 # ifdef __linux
 #  include <time.h>
 #  define NSIG _NSIG
+typedef __sighandler_t sig_t;
 # endif
 
 # define LEFT 1 << 0

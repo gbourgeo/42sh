@@ -77,9 +77,10 @@ int		is_keyword(char *arg, t_type *type)
 
 int		is_file(char *arg, char **paths, t_type *type, int ret)
 {
-	int		i;
-	char	*tmp1;
-	char	*tmp2;
+	struct stat	st;
+	int			i;
+	char		*tmp1;
+	char		*tmp2;
 
 	i = -1;
 	while (paths && paths[++i])

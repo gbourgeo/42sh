@@ -27,8 +27,6 @@ typedef struct	s_type
 	int	cnt_opt;
 }				t_type;
 
-struct stat		st;
-
 void			get_option(char *option, t_type *type, int i);
 int				illegal_option(char *option);
 int				count_options(char **av);
