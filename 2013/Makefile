@@ -83,20 +83,33 @@ OBJ_RED = $(addprefix $(OBJ_DIR), $(REDIREC:.c=.o))
 OBJ_PIP = $(addprefix $(OBJ_DIR), $(PIPEX:.c=.o))
 OBJ_KEY	= $(addprefix $(OBJ_DIR), $(KEYS:.c=.o))
 
-FLAGS	= -Wall -Werror -Wextra
+FLAGS	= -Wall -Werror -Wextra -g3
 
 LIBFT	= libft/
 
 INCLUDES = -I includes -I $(LIBFT)/includes -I /usr/include
 
-LIBRAIRIES = -L$(LIBFT) -lft -ltermcap -g3
+LIBRAIRIES = -L$(LIBFT) -lft -ltermcap
 
-all: imsexyandiknowit $(NAME)
+all: debugging profiling imsexyandiknowit $(NAME)
 
 .PHONY: clean fclean re all make
 
+profiling:
+ifdef prof
+	@echo "Profiling mode enabled !"
+FLAGS += -g -pg
+LIBRAIRIES += -pg
+endif
+
+debugging:
+ifdef dbg
+	@echo "Debugging mode enabled !"
+FLAGS += -g3
+endif
+
 imsexyandiknowit:
-	@make -C $(LIBFT)
+	@make -sC $(LIBFT)
 	@mkdir -p obj
 	@echo -n - Compilation du Shell42
 
@@ -129,11 +142,11 @@ $(OBJ_DIR)%.o: $(KEY_DIR)%.c
 	@gcc $(FLAGS) -o $@ -c $< $(INCLUDES)
 
 clean:
-	make -C $(LIBFT) clean
+	@make -sC $(LIBFT) clean
 	rm -rf $(OBJ_DIR)
 
 fclean: clean
-	make -C $(LIBFT) fclean
+	@make -sC $(LIBFT) fclean
 	rm -rf $(NAME)
 
 re: fclean all
