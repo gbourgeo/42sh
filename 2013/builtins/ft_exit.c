@@ -14,7 +14,6 @@
 
 static void		free_and_exit(char **args, t_env *e)
 {
-	ft_putendl("exit");
 	ft_term_restore(e);
 	if (args)
 		ft_free(&args);
@@ -27,6 +26,7 @@ static void		free_and_exit(char **args, t_env *e)
 	if (e->term)
 		free(e->term);
 	close(e->fd);
+	ft_putendl("exit");
 	exit(e->status);
 }
 

@@ -81,7 +81,7 @@ char			*ft_get_path(char *pwd)
 		return (NULL);
 	list = NULL;
 	i = 0;
-	while (table[i] != '\0')
+	while (table[i] != NULL)
 	{
 		if (!ft_strcmp(table[i], ".."))
 			list = ft_remove_from_list(list);
@@ -91,6 +91,5 @@ char			*ft_get_path(char *pwd)
 	}
 	ft_free(&table);
 	free(pwd);
-	pwd = NULL;
 	return (ft_gen_path_from_list(list));
 }

@@ -45,11 +45,9 @@ static int		*ft_wcharlen(const int *str, int *i)
 
 static void		find_precision(t_dt *data, const int *str, int *len)
 {
-	int			i;
 	int			w;
 	int			precision;
 
-	i = 0;
 	precision = 0;
 	if (!str)
 		return ;

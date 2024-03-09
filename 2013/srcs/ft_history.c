@@ -48,8 +48,7 @@ t_hist			*ft_add_to_hist(t_hist *history)
 		cmd = history->command;
 		while (history->prev)
 			history = history->prev;
-		free(history->command);
-		history->command = NULL;
+		ft_freestr(&history->command);
 		if ((history->command = ft_strnew(CMD_SIZE *
 			((ft_strlen(cmd) / CMD_SIZE) + 1) + 1)) == NULL)
 			return (history);

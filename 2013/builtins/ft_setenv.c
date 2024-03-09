@@ -71,7 +71,7 @@ int				ft_setenv(char **args, char ***env)
 	int		ret;
 
 	ret = 0;
-	if (args[1] == '\0' || ft_strchr(args[1], '='))
+	if (args[1] == NULL || ft_strchr(args[1], '='))
 		ft_putendl("setenv: bad assignment");
 	else
 	{

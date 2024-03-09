@@ -10,6 +10,7 @@
 /*                                                                            */
 /* ************************************************************************** */
 
+#include <string.h>
 #include "get_next_line.h"
 #include "ft_minishell.h"
 
@@ -20,6 +21,7 @@ static int		ft_minishell(int fd, char **environ)
 	int			ret;
 
 	ret = 0;
+	memset(&e, 0, sizeof(e));
 	if (init_shell(fd, &e, environ))
 	{
 		prompt(e.env);
@@ -51,13 +53,13 @@ static int		ft_minishell_file(char **av, char **environ)
 				if (ft_strstr("exit", e.history->command))
 					break ;
 				ft_parser(&e);
-				free(e.history->command);
+				ft_freestr(&e.history->command);
 				if (!e.status)
 					break ;
 			}
 		}
 		ft_close(fd);
-		free(e.history->command);
+		ft_freestr(&e.history->command);
 		return (e.status);
 	}
 	ft_strerror(ft_strjoin("42sh: Unable to access :", av[1]));

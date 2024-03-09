@@ -27,7 +27,7 @@ static int	ft_pipes_analysis(char **args)
 	i = 0;
 	if (args == NULL)
 		return (1);
-	while (args[i] != '\0')
+	while (args[i] != NULL)
 	{
 		if (ft_strchr(PIPES, args[i][0]) != NULL)
 		{
@@ -52,7 +52,7 @@ int			ft_syntax_analysis(char **args)
 	i = 0;
 	if (args == NULL)
 		return (1);
-	while (args[i] != '\0')
+	while (args[i] != NULL)
 	{
 		if (ft_strchr(SEPARATORS, args[i][0]) != NULL)
 		{

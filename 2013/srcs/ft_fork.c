@@ -19,7 +19,6 @@ static char		*check_path(char *path)
 	if (access(path, F_OK) == 0 && stat(path, &buffer) == 0)
 		return (path);
 	free(path);
-	path = NULL;
 	return (NULL);
 }
 

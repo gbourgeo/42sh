@@ -17,9 +17,9 @@ void		ft_free_history(t_hist *hist)
 	if (hist->next != NULL)
 		ft_free_history(hist->next);
 	if (hist->command != NULL)
-		free(hist->command);
+		ft_freestr(&hist->command);
 	if (hist->save != NULL)
-		free(hist->save);
+		ft_freestr(&hist->save);
 	hist->prev = NULL;
 	hist->next = NULL;
 	free(hist);
@@ -43,21 +43,20 @@ void		ft_free_list(t_args **list)
 
 void		ft_free(char ***str)
 {
-	int		i;
+	char	**table;
+	int	i;
 
 	i = 0;
-	if (str && *str)
+	if (str && *str != NULL)
 	{
-		while ((*str)[i] != '\0')
+		table = (char **)*str;
+		while (table[i] != NULL)
 		{
-			free((*str)[i]);
-			(*str)[i] = NULL;
+			free(table[i]);
+			table[i] = NULL;
 			++i;
 		}
-		free((*str)[i]);
-		(*str)[i] = NULL;
-		free(*str);
-		(*str) = NULL;
-		str = NULL;
+		free(table);
+		*str = NULL;
 	}
 }

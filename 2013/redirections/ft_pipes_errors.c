@@ -16,7 +16,7 @@ int			ft_check_redirect_left(char **args, int i)
 {
 	if (ft_strlen(args[i]) == 1)
 	{
-		if (ft_strcharset(args[i + 1], PIPES) != NULL || args[i + 1] == '\0')
+		if (ft_strcharset(args[i + 1], PIPES) != NULL || args[i + 1] == NULL)
 			return (1);
 	}
 	else if (ft_strlen(args[i]) >= 2)
