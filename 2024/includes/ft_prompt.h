@@ -1,30 +1,31 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   ft_frees.c                                         :+:      :+:    :+:   */
+/*   ft_prompt.h                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: gbourgeo <gbourgeo@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2014/02/12 22:56:22 by gbourgeo          #+#    #+#             */
-/*   Updated: 2014/03/27 04:19:42 by gbourgeo         ###   ########.fr       */
+/*   Created: 2013/12/28 04:49:32 by gbourgeo          #+#    #+#             */
+/*   Updated: 2018/04/06 17:34:07 by gbourgeo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "ft_shell.h"
-#include "libft.h"
+#ifndef _FT_PROMPT_H_
+#define _FT_PROMPT_H_
 
-void ft_free_list(t_args **list)
+#include <stddef.h>
+
+typedef struct s_prompt
 {
-    if (*list)
-    {
-        if ((*list)->next != NULL)
-            ft_free_list(&(*list)->next);
-        (*list)->type = 0;
-        (*list)->pipe = 0;
-        if ((*list)->args)
-            ft_freetab(&(*list)->args);
-        (*list)->next = NULL;
-        free(*list);
-        *list = NULL;
-    }
-}
+    char  *str;   /* Prompt string */
+    size_t len;   /* Longueur du prompt */
+    char   print; /* Afficher le prompt ? */
+} t_prompt;
+
+/**
+ * @brief Initialise la structure du prompte.
+ * @param propmt Structure interne du prompte
+ */
+void ft_init_shell_prompt(t_prompt *prompt);
+
+#endif /* _FT_PROMPT_H_ */

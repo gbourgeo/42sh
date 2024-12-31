@@ -11,13 +11,13 @@
 /* ************************************************************************** */
 
 #ifndef REDIRECTIONS_H
-# define REDIRECTIONS_H
+#define REDIRECTIONS_H
 
-int     ft_check_double_pipe(char **args, int i);
-int     ft_check_semi_colon(char **args, int i);
-int     ft_check_double_and(char **args, int i);
-int     ft_check_redirect_left(char **args, int i);
-int     ft_check_redirect_right(char **args, int i);
-int     ft_check_redirect_pipe(char **args, int i);
+int ft_check_double_pipe(char **args, int i);
+int ft_check_semi_colon(char **args, int i);
+int ft_check_double_and(char **args, int i);
+int ft_check_redirect_left(char **args, int i);
+int ft_check_redirect_right(char **args, int i);
+int ft_check_redirect_pipe(char **args, int i);
 
 #endif

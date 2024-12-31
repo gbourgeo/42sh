@@ -1,0 +1,6 @@
+echo a 2>out&&helo||helo|toutou|;&corner 2\>a
+
+echo "Test commentaire 1" # Un autre commentaire
+echo "Test commentaire 2" // Un autre commentaire
+echo "Test commentaire 3" /* Un autre commentaire */; ls
+

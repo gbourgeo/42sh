@@ -1,18 +1,27 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   libft2.h                                           :+:      :+:    :+:   */
+/*   ft_argsnew.c                                       :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: gbourgeo <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2014/02/06 17:11:14 by gbourgeo          #+#    #+#             */
-/*   Updated: 2018/04/06 17:11:30 by gbourgeo         ###   ########.fr       */
+/*   Created: 2014/03/26 08:55:50 by gbourgeo          #+#    #+#             */
+/*   Updated: 2014/03/27 00:03:08 by gbourgeo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#ifndef LIBFT2_H
-#define LIBFT2_H
+#include "ft_token.h"
+#include "libft.h"
 
-int ft_dup2(int oldd, int newd);
+t_args *ft_argsnew(char **args, int type)
+{
+    t_args *new;
 
-#endif
+    if ((new = (t_args *) malloc(sizeof(t_args))) == NULL)
+        return (NULL);
+    new->type = type;
+    new->pipe = 0;
+    new->args = ft_tabdup(args);
+    new->next = NULL;
+    return (new);
+}

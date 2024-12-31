@@ -1,18 +1,19 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   libft2.h                                           :+:      :+:    :+:   */
+/*   ft_highlight_paste.c                               :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: gbourgeo <marvin@42.fr>                    +#+  +:+       +#+        */
+/*   By: gbourgeo <gbourgeo@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2014/02/06 17:11:14 by gbourgeo          #+#    #+#             */
-/*   Updated: 2018/04/06 17:11:30 by gbourgeo         ###   ########.fr       */
+/*   Created: 2014/03/13 16:03:26 by gbourgeo          #+#    #+#             */
+/*   Updated: 2018/04/06 18:39:13 by gbourgeo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#ifndef LIBFT2_H
-#define LIBFT2_H
+// #include "ft_highlight.h"
+#include "ft_shell.h"
 
-int ft_dup2(int oldd, int newd);
-
-#endif
+void ft_highlight_paste(t_shell *shell)
+{
+    (void) shell;
+}

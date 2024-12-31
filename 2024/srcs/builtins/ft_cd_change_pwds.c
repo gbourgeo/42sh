@@ -1,30 +1,33 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   ft_frees.c                                         :+:      :+:    :+:   */
+/*   ft_cd_change_pwds.c                                :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: gbourgeo <gbourgeo@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2014/02/12 22:56:22 by gbourgeo          #+#    #+#             */
-/*   Updated: 2014/03/27 04:19:42 by gbourgeo         ###   ########.fr       */
+/*   Created: 2014/02/15 20:44:42 by gbourgeo          #+#    #+#             */
+/*   Updated: 2017/02/23 05:36:51 by gbourgeo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "ft_shell.h"
-#include "libft.h"
+#include "ft_builtins.h"
 
-void ft_free_list(t_args **list)
+void cd_change_pwds(const char *pwd, t_shell *shell)
 {
-    if (*list)
+    const char *tmp[4];
+
+    tmp[0] = "setenv";
+    tmp[3] = NULL;
+    if (ft_getenv("OLDPWD", shell))
     {
-        if ((*list)->next != NULL)
-            ft_free_list(&(*list)->next);
-        (*list)->type = 0;
-        (*list)->pipe = 0;
-        if ((*list)->args)
-            ft_freetab(&(*list)->args);
-        (*list)->next = NULL;
-        free(*list);
-        *list = NULL;
+        tmp[1] = "OLDPWD";
+        tmp[2] = ft_getenv("PWD", shell);
+        ft_setenv(tmp, shell);
+    }
+    if (ft_getenv("PWD", shell))
+    {
+        tmp[1] = "PWD";
+        tmp[2] = pwd;
+        ft_setenv(tmp, shell);
     }
 }

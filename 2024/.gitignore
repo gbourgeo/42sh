@@ -4,3 +4,4 @@ obj/
 gmon.out
 *.gcov
 *.html
+.clangd

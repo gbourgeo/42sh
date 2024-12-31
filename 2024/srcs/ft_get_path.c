@@ -10,12 +10,12 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "ft_minishell.h"
+#include "libft.h"
 
-static char     *ft_generate_path_from_table(char **table)
+static char *ft_generate_path_from_table(char **table)
 {
-    char    *path;
-    char    *tmp;
+    char *path;
+    char *tmp;
 
     path = ft_strdup("/");
     while (table && *table != NULL)
@@ -29,13 +29,13 @@ static char     *ft_generate_path_from_table(char **table)
     return (path);
 }
 
-static int      ft_remove_field_from_table(char **table, int i, int times)
+static int ft_remove_field_from_table(char **table, int i, int times)
 {
-    int     tablen;
-    int     t;
+    int tablen;
+    int t;
 
     tablen = ft_tablen(table);
-    t = times;
+    t      = times;
     while (t-- && i >= 0)
     {
         free(table[i]);
@@ -63,26 +63,24 @@ static int      ft_remove_field_from_table(char **table, int i, int times)
  * "/home/user/libft/src").
  * @param[in] pwd Chemin absolu commençant par un '/'
  * @return Chemin absolu sans '..' ni '.'
-*/
-char            *ft_get_path(char *pwd)
+ */
+char *ft_get_path(char *pwd)
 {
-    char        **table;
-    char        *ret;
-    int         i;
+    char **table;
+    char  *ret;
+    int    i;
 
-    i = 0;
+    i   = 0;
     ret = NULL;
     if ((table = ft_strsplit(pwd, '/')) == NULL)
         return (ret);
     while (table[i] != NULL)
-    {
         if (ft_strcmp(table[i], "..") == 0)
             i = ft_remove_field_from_table(table, i, 2);
         else if (ft_strcmp(table[i], ".") == 0)
             i = ft_remove_field_from_table(table, i, 1);
         else
             i++;
-    }
     ret = ft_generate_path_from_table(table);
     ft_freetab(&table);
     free(pwd);

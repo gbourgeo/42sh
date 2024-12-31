@@ -1,7 +1,7 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   ft_history.h                                       :+:      :+:    :+:   */
+/*   ft_getenv.c                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: gbourgeo <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
@@ -10,22 +10,30 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-#ifndef FT_HISTORY_H
-#define FT_HISTORY_H
+#include "ft_builtins.h"
+#include "libft.h"
 
-#include <stddef.h>
-
-typedef struct s_history
+const char *ft_real_getenv(const char *str, const char **env)
 {
-    struct s_history *prev;        /* Pointeur vers la commande précédente */
-    char             *command;     /* Commande */
-    size_t            command_len; /* Longueur de la commande */
-    struct s_history *next;        /* Pointeur vers la commande suivante */
-} t_hist;
+    int i = 0;
 
-t_hist *ft_init_shell_history(char *history_file);
-t_hist *ft_history_new(char *buffer, t_hist *hist_list);
-void    ft_history_remove_all(t_hist *hist_list);
-t_hist *ft_history_rewind(t_hist *hist_list);
+    if (str == NULL || env == NULL)
+        return (NULL);
+    while (env[i] != NULL)
+    {
+        if (ft_strcmp(env[i], str) == '=')
+            return (env[i] + ft_strlen(str) + 1);
+        i++;
+    }
+    return (NULL);
+}
 
-#endif /* FT_HISTORY_H */
+const char *ft_getenv(const char *str, t_shell *shell)
+{
+    const char *ptr;
+
+    ptr = ft_real_getenv(str, (const char **) shell->global_env);
+    if (ptr == NULL)
+        ptr = ft_real_getenv(str, (const char **) shell->internal_env);
+    return (ptr);
+}

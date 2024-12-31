@@ -10,11 +10,12 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-#include <unistd.h>
 #include "libft.h"
 #include "libft2.h"
 
-int         ft_dup2(int oldd, int newd)
+#include <unistd.h>
+
+int ft_dup2(int oldd, int newd)
 {
     if (newd != oldd)
         close(newd);
