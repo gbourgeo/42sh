@@ -19,19 +19,33 @@ int check_and_exec(const char **args, t_shell *shell)
     if (args && *args)
     {
         if (ft_strcmp(*args, "exit") == 0)
+        {
             ft_exit(args, shell);
+        }
         else if (ft_strcmp(*args, "env") == 0)
+        {
             return (ft_env(args, shell));
+        }
         else if (ft_strcmp(*args, "setenv") == 0)
+        {
             return (ft_setenv(args, shell));
+        }
         else if (ft_strcmp(*args, "unsetenv") == 0)
+        {
             return (ft_unsetenv(args, shell));
+        }
         else if (ft_strcmp(*args, "cd") == 0)
+        {
             return (ft_cd(args, shell));
+        }
         else if (ft_strcmp(*args, "echo") == 0)
+        {
             return (ft_echo(args, shell));
+        }
         else
+        {
             return (fork_function(args, shell));
+        }
     }
     return (shell->status);
 }

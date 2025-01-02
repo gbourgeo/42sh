@@ -11,13 +11,11 @@
 /* ************************************************************************** */
 
 #include "ft_shell.h"
-#include "ft_termkeys.h"
+#include "ft_termios.h"
+#include "libft.h"
 
-void ft_move_shift_right(void *e)
+void ft_move_shift_right(t_shell *shell)
 {
-    t_shell *shell;
-
-    shell = (t_shell *) e;
     if (shell->command.buffer[shell->command.pos] != '\0')
     {
         if (shell->highlighted.on == 0)
@@ -32,20 +30,21 @@ void ft_move_shift_right(void *e)
             return;
         }
         if (shell->command.pos >= shell->highlighted.tail)
+        {
             ft_term_highlight_mode_on(&shell->terminal); /* Active le mode surlignage */
+        }
         ft_term_remove_char(&shell->terminal);           /* Efface 1 caractère sous la position du curseur */
         ft_putchar(shell->command.buffer[shell->command.pos]);
         if (shell->command.pos >= shell->highlighted.tail)
+        {
             ft_term_clear_modes(&shell->terminal); /* Désactive tous les modes actifs */
+        }
         shell->command.pos++;
     }
 }
 
-void ft_move_shift_left(void *e)
+void ft_move_shift_left(t_shell *shell)
 {
-    t_shell *shell;
-
-    shell = (t_shell *) e;
     if (shell->command.pos > 0)
     {
         if (shell->highlighted.on == 0)
@@ -61,12 +60,16 @@ void ft_move_shift_left(void *e)
             }
             ft_term_move_cursor_left(&shell->terminal);      /* Bouge le curseur à gauche d'1 colonne */
             if (shell->command.buffer[shell->command.pos] != '\0')
-                ft_term_clear_modes(&shell->terminal);       /* Désactive tous les modes actifs */
+            {
+                ft_term_clear_modes(&shell->terminal); /* Désactive tous les modes actifs */
+            }
             shell->command.pos--;
             return;
         }
         if (shell->command.pos <= shell->highlighted.tail)
+        {
             ft_term_highlight_mode_on(&shell->terminal); /* Active le mode surlignage */
+        }
         if (shell->command.buffer[shell->command.pos] != '\0')
         {
             ft_term_remove_char(&shell->terminal);      /* Efface 1 caractère sous la position du curseur */
@@ -75,7 +78,9 @@ void ft_move_shift_left(void *e)
         }
         ft_term_move_cursor_left(&shell->terminal);     /* Bouge le curseur à gauche d'1 colonne */
         if (shell->command.pos <= shell->highlighted.tail)
-            ft_term_clear_modes(&shell->terminal);      /* Désactive tous les modes actifs */
+        {
+            ft_term_clear_modes(&shell->terminal); /* Désactive tous les modes actifs */
+        }
         shell->command.pos--;
     }
 }

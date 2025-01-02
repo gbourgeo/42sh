@@ -24,7 +24,7 @@
  */
 static void ft_treat_command(t_shell *shell)
 {
-    if (shell->options & SHELL_INTERACTIVE_MODE)
+    if (shell->options & (unsigned int) SHELL_INTERACTIVE_MODE)
     {
         if (shell->highlighted.on != 0)
         {
@@ -45,7 +45,7 @@ static void ft_treat_command(t_shell *shell)
     }
 }
 
-void ft_key_analyser(const char *buffer, ssize_t len, t_shell *shell)
+void ft_key_analyser(const char *buffer, long len, t_shell *shell)
 {
     static t_key keys[] = {
         { { 0x03 },                               1, ft_control_c                     }, /* Ctrl + C             */
@@ -79,16 +79,15 @@ void ft_key_analyser(const char *buffer, ssize_t len, t_shell *shell)
         { { 0x1B, 0x7F },                         2, ft_delete_word_left              }, /* Alt + Backspace      */
         { { 0x7F },                               1, ft_delete_character_left         }, /* Backspace            */
     };
-    ssize_t iter;
-    size_t  jter;
+    long          iter = 0;
+    unsigned long jter = 0;
 
-    iter = 0;
     while (iter < len)
     {
         if (ft_isprint(buffer[iter]))
         {
             ft_insert_character(buffer[iter], shell);
-            if (shell->options & SHELL_INTERACTIVE_MODE)
+            if (shell->options & (unsigned int) SHELL_INTERACTIVE_MODE)
             {
                 ft_print_character(shell);
                 ft_print_command(shell, 1);
@@ -97,7 +96,7 @@ void ft_key_analyser(const char *buffer, ssize_t len, t_shell *shell)
             continue;
         }
         jter = 0;
-#pragma unroll 28
+#pragma unroll(sizeof(keys) / sizeof(keys[0]))
         while (jter < sizeof(keys) / sizeof(keys[0]))
         {
             if (ft_memcmp(keys[jter].code, &buffer[iter], keys[jter].code_len) == 0)

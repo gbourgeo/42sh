@@ -12,17 +12,20 @@
 
 #include "ft_shell.h"
 
-t_shell g_shell; /* Structure globale de notre shell */
+/* Structure globale de notre shell */
+t_shell g_shell;
 
-int     main(int ac, const char **av)
+int     main(int argc, const char **argv)
 {
-    extern char * const *environ;
+    extern char * const * const environ;
 
-    (void) ac;
-    ft_shell_init(av[0], environ, &g_shell);
-    av = ft_shell_options(av + 1, &g_shell);
+    (void) argc;
+    ft_shell_init(argv[0], environ, &g_shell);
+    argv = ft_shell_options(argv + 1, &g_shell);
     if (g_shell.quit == 0)
-        ft_shell_exec(av, &g_shell);
+    {
+        ft_shell_exec(argv, &g_shell);
+    }
     ft_shell_exit(&g_shell);
     return (g_shell.status);
 }

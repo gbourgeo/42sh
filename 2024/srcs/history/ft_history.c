@@ -11,10 +11,8 @@
 /* ************************************************************************** */
 
 #include "ft_history.h"
-
 #include "get_next_line.h"
 #include "libft.h"
-
 #include <stdlib.h>
 #include <sys/fcntl.h>
 
@@ -25,23 +23,25 @@
  */
 t_hist *ft_init_shell_history(char *history_file)
 {
-    t_hist *history;
-    char   *line;
-    int     fd;
-
-    history = NULL;
-    line    = NULL;
-    fd      = 0;
+    t_hist *history = NULL;
+    char   *line    = NULL;
+    int     filed   = 0;
 
     if (history_file == NULL)
+    {
         return (NULL);
+    }
     /* Ouverture du fichier */
-    fd = open(history_file, O_RDONLY);
-    if (fd < 0)
+    filed = open(history_file, O_RDONLY);
+    if (filed < 0)
+    {
         return (NULL);
+    }
     /* Parsing du fichier: une ligne == une commande */
-    while (get_next_line(fd, &line) > 0)
+    while (get_next_line(filed, &line) > 0)
+    {
         history = ft_history_new(line, history);
+    }
     return (history);
 }
 
@@ -54,11 +54,13 @@ t_hist *ft_init_shell_history(char *history_file)
  */
 t_hist *ft_history_new(char *buffer, t_hist *hist_list)
 {
-    t_hist *history;
+    t_hist *history = NULL;
 
     history = (t_hist *) malloc(sizeof(*history));
     if (history == NULL)
+    {
         return (hist_list);
+    }
     history->command     = ft_strdup(buffer);
     history->command_len = ft_strlen(buffer);
     history->next        = NULL;
@@ -80,7 +82,9 @@ t_hist *ft_history_new(char *buffer, t_hist *hist_list)
 void ft_history_remove_all(t_hist *hist_list)
 {
     if (hist_list == NULL)
+    {
         return;
+    }
     ft_history_remove_all(hist_list->next);
     free(hist_list->command);
 }
@@ -93,7 +97,11 @@ void ft_history_remove_all(t_hist *hist_list)
 t_hist *ft_history_rewind(t_hist *hist_list)
 {
     if (hist_list)
+    {
         while (hist_list->prev != NULL)
+        {
             hist_list = hist_list->prev;
+        }
+    }
     return (hist_list);
 }

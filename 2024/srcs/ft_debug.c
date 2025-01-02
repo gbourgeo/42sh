@@ -10,6 +10,7 @@
 /*                                                                            */
 /* ************************************************************************** */
 
+#include "ft_constants.h"
 #include "ft_highlight.h"
 #include "ft_history.h"
 #include "ft_printf.h"
@@ -19,17 +20,16 @@
 #include "ft_termkeys.h"
 #include "ft_token.h"
 #include "libft.h"
-
 #include <stdlib.h>
 #include <unistd.h>
 
-typedef struct debug_s
+typedef struct __attribute__((aligned(SOFT_ALIGNMENT_CONSTANT))) debug_s
 {
-    int lines_printed;
-    int pos;
-    int buf_len;
-    int col_max;
-    int line; /* Position de la ligne de commande après affichage des infos */
+    long   lines_printed;
+    size_t pos;
+    size_t buf_len;
+    int    col_max;
+    int    line; /* Position de la ligne de commande après affichage des infos */
 } debug_t;
 
 static void preexec_print_info(debug_t *dbg, t_shell *shell)
@@ -69,41 +69,47 @@ static void postexec_print_info(debug_t *dbg, t_shell *shell)
 
     /* Réactive le mode surlignage si nécessaire */
     if (shell->highlighted.on != 0)
+    {
         ft_term_highlight_mode_on(&shell->terminal); /* Active le mode surlignage */
+    }
 }
 
-static void get_lines_printed(debug_t *dbg, int buff_print, t_term *terminal)
+static void get_lines_printed(debug_t *dbg, long buff_print, t_term *terminal)
 {
     if (dbg->line + dbg->lines_printed >= terminal->max_line)
+    {
         dbg->line = dbg->line - 1;
+    }
     dbg->lines_printed = dbg->lines_printed + (buff_print / terminal->max_column + 1);
 }
 
-void debug_command_line(const char *buf, ssize_t ret, t_shell *shell)
+void debug_command_line(const char *buf, long ret, t_shell *shell)
 {
     debug_t dbg;
-    int     buff_print = 0;
+    long    buff_print = 0;
 
-    if (!(shell->options & SHELL_DEBUG_MODE))
+    if (!(shell->options & (unsigned int) SHELL_DEBUG_MODE))
+    {
         return;
+    }
 
     preexec_print_info(&dbg, shell);
 
     /* Affiche le contenu du buffer */
     if (buf != NULL)
     {
-        int i      = 0;
+        int iter = 0;
 
         buff_print = ft_printf("Buffer [");
-        while (i < ret)
+        while (iter < ret)
         {
-            buff_print += ft_printf(" \033[36m%x\033[0m", buf[i]);
-            i++;
+            buff_print += ft_printf(" \033[36m%x\033[0m", buf[iter]);
+            iter++;
         }
-        while (i < MAX_KEY_SIZE)
+        while (iter < MAX_KEY_SIZE)
         {
             buff_print += ft_printf(" 0");
-            i++;
+            iter++;
         }
         buff_print += ft_printf(" ]");
         get_lines_printed(&dbg, buff_print, &shell->terminal);
@@ -115,17 +121,13 @@ void debug_command_line(const char *buf, ssize_t ret, t_shell *shell)
 
     while (text)
     {
-        size_t start, end;
+        size_t start = text->head;
+        size_t end   = text->tail;
 
         if (text->head >= text->tail)
         {
             start = text->tail;
             end   = text->head;
-        }
-        else
-        {
-            start = text->head;
-            end   = text->tail;
         }
 
         ft_term_move_cursor_down(&shell->terminal); /* Positionne le curseur au
@@ -170,20 +172,33 @@ void debug_command_line(const char *buf, ssize_t ret, t_shell *shell)
         {
             hist_len++;
             if (hist == shell->history)
+            {
                 hist_pos = hist_len;
+            }
             hist = hist->next;
         }
 
         buff_print = ft_snprintf(hist_buff, sizeof(hist_buff), "Hist(%ld):", hist_len);
 
-        hist       = shell->history;
+        hist = shell->history;
         if (hist && hist->prev)
-            buff_print += ft_snprintf(hist_buff + buff_print, sizeof(hist_buff) - buff_print, "%s[#%ld:%s]", (hist->prev->prev) ? " ... " : " ", hist_pos - 1, hist->prev->command);
+        {
+            buff_print += ft_snprintf(hist_buff + buff_print,
+                                      sizeof(hist_buff) - buff_print,
+                                      "%s[#%ld:%s]",
+                                      (hist->prev->prev) ? " ... " : " ",
+                                      hist_pos - 1,
+                                      hist->prev->command);
+        }
         hist = shell->history;
         while (hist && buff_print < shell->terminal.max_column)
         {
-            buff_print += ft_snprintf(
-                hist_buff + buff_print, sizeof(hist_buff) - buff_print, " [%c%ld:%s]", (shell->command.original != NULL && hist == shell->history) ? '*' : '#', hist_pos, hist->command);
+            buff_print += ft_snprintf(hist_buff + buff_print,
+                                      sizeof(hist_buff) - buff_print,
+                                      " [%c%ld:%s]",
+                                      (shell->command.original != NULL && hist == shell->history) ? '*' : '#',
+                                      hist_pos,
+                                      hist->command);
             hist_pos++;
             hist = hist->next;
         }
@@ -221,18 +236,20 @@ void debug_command_line(const char *buf, ssize_t ret, t_shell *shell)
 }
 
 static t_token *debug_tokens_print_token(t_token *first, t_token *last,
-                                         long *saved_len, t_shell *shell)
+                                         const long *saved_len, t_shell *shell)
 {
-    char    info[256] = { 0 };
-    ssize_t info_len  = 0;
-    int     nb_tokens = 0;
+    char info[256] = { 0 };
+    long info_len  = 0;
+    int  nb_tokens = 0;
 
     ft_printf("\n");
     while (first != last)
     {
         info_len = ft_snprintf(info, sizeof(info), "%.*s", first->head - first->tail, shell->command.buffer + first->tail);
-        for (ssize_t i = info_len; i < saved_len[nb_tokens]; i++)
+        for (long i = info_len; i < saved_len[nb_tokens]; i++)
+        {
             ft_strncat(info, " ", sizeof(info));
+        }
         ft_printf("\033[36m%s%s\033[0m", (nb_tokens == 0) ? "  " : "   ", info);
         nb_tokens++;
         first = first->next;
@@ -244,15 +261,17 @@ static t_token *debug_tokens_print_token(t_token *first, t_token *last,
 void debug_tokens(t_token *token, t_shell *shell)
 {
     char     info[256]  = { 0 };
-    ssize_t  info_len   = 0;
+    long     info_len   = 0;
     t_token *ptr        = NULL;
     int      start_save = 0;
     int      nb_tokens  = 0;
     int      printed    = 0;
     long    *saved_len  = NULL;
 
-    if (!(shell->options & SHELL_DEBUG_MODE))
+    if (!(shell->options & (unsigned int) SHELL_DEBUG_MODE))
+    {
         return;
+    }
 
     ptr = token;
     while (ptr)
@@ -261,7 +280,9 @@ void debug_tokens(t_token *token, t_shell *shell)
         ptr = ptr->next;
     }
     if (nb_tokens == 0)
+    {
         return;
+    }
     saved_len = malloc(nb_tokens * sizeof(*saved_len));
     ptr       = token;
     ft_printf("Token list:  TYPE (length) | ...\n");
@@ -273,9 +294,11 @@ void debug_tokens(t_token *token, t_shell *shell)
 
         if (printed + info_len + 3 < shell->terminal.max_column)
         {
-            saved_len[nb_tokens] = (info_len > (ssize_t) (token->head - token->tail)) ? info_len : token->head - token->tail;
-            for (ssize_t i = info_len; i < saved_len[nb_tokens]; i++)
+            saved_len[nb_tokens] = (info_len > (long) (token->head - token->tail)) ? info_len : (long) (token->head - token->tail);
+            for (long i = info_len; i < saved_len[nb_tokens]; i++)
+            {
                 ft_strncat(info, " ", sizeof(info));
+            }
             printed += ft_printf("%s%s", (token == ptr) ? "  " : " | ", info);
             nb_tokens++;
             token = token->next;

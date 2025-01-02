@@ -13,9 +13,14 @@
 #ifndef _FT_CONSTANTS_H_
 #define _FT_CONSTANTS_H_
 
-#define LARGE_ALIGNMENT_CONSTANT  128
-#define MEDIUM_ALIGNMENT_CONSTANT 64
-#define SOFT_ALIGNMENT_CONSTANT   32
-#define SHELL_FATAL_STATUS        127
+enum
+{
+    /* Alignements */
+    SOFT_ALIGNMENT_CONSTANT   = 32,
+    MEDIUM_ALIGNMENT_CONSTANT = 64,
+    LARGE_ALIGNMENT_CONSTANT  = 128,
+    /* Code retour */
+    SHELL_FATAL_STATUS        = 127,
+};
 
 #endif /* _FT_CONSTANTS_H_ */

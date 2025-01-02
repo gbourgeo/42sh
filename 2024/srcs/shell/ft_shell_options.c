@@ -20,7 +20,9 @@ const char **ft_shell_options(const char **argv, t_shell *shell)
     while (*argv && **argv == '-')
     {
         if (ft_strcmp(*argv, "--") == 0)
+        {
             break;
+        }
         if (ft_strcmp(*argv, "-d") == 0 || ft_strcmp(*argv, "--debug") == 0)
         {
             shell->options |= SHELL_DEBUG_MODE;

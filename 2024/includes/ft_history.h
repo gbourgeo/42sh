@@ -13,9 +13,10 @@
 #ifndef FT_HISTORY_H
 #define FT_HISTORY_H
 
+#include "ft_constants.h"
 #include <stddef.h>
 
-typedef struct s_history
+typedef struct __attribute__((aligned(SOFT_ALIGNMENT_CONSTANT))) s_history
 {
     struct s_history *prev;        /* Pointeur vers la commande précédente */
     char             *command;     /* Commande */

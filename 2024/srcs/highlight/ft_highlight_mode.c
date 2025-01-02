@@ -13,7 +13,6 @@
 #include "ft_highlight.h"
 #include "ft_shell.h"
 #include "ft_termios.h"
-
 #include <stdlib.h>
 #include <unistd.h>
 
@@ -25,9 +24,8 @@
  */
 static t_htext *ft_highlight_new_area(size_t pos, t_htext *htexts)
 {
-    t_htext *ptr;
+    t_htext *ptr = ft_highlight_get_area(pos, htexts);
 
-    ptr = ft_highlight_get_area(pos, htexts);
     if (ptr == NULL)
     {
         ptr       = (t_htext *) malloc(sizeof(*ptr));
@@ -51,14 +49,16 @@ static t_htext *ft_highlight_new_area(size_t pos, t_htext *htexts)
 
 void ft_highlight_mode(t_shell *shell)
 {
-    t_htext *text;
+    t_htext *text = NULL;
 
     shell->highlighted.on = !shell->highlighted.on;
     if (shell->highlighted.on == 0)
     {
         text = shell->highlighted.texts;
         if (text->head >= text->tail)
+        {
             ft_term_clear_modes(&shell->terminal); /* Désactive tous les modes actifs */
+        }
         if (shell->command.buffer[shell->command.pos] != '\0')
         {
             ft_term_insert_mode_on(&shell->terminal);   /* Active le mode insertion */
@@ -68,9 +68,13 @@ void ft_highlight_mode(t_shell *shell)
             ft_term_insert_mode_off(&shell->terminal);  /* Désactive le mode insertion */
         }
         if (text->head == text->tail)
+        {
             shell->highlighted.texts = ft_highlight_remove_area(shell->highlighted.texts);
+        }
         else
+        {
             shell->highlighted.texts = ft_highlight_sort_area(shell->highlighted.texts);
+        }
         ft_term_clear_modes(&shell->terminal); /* Désactive tous les modes actifs */
     }
     else
@@ -78,8 +82,12 @@ void ft_highlight_mode(t_shell *shell)
         ft_term_highlight_mode_on(&shell->terminal); /* Active le mode surlignage */
         text = ft_highlight_get_area(shell->command.pos, shell->highlighted.texts);
         if (text == NULL)
+        {
             shell->highlighted.texts = ft_highlight_new_area(shell->command.pos, shell->highlighted.texts);
+        }
         else
+        {
             shell->highlighted.texts = text;
+        }
     }
 }

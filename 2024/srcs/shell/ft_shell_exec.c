@@ -14,12 +14,10 @@
 #include "ft_shell.h"
 #include "ft_termios.h"
 #include "ft_termkeys.h"
-
 #include <errno.h>
-#include <fcntl.h>
+#include <signal.h>
 #include <string.h>
-#include <sys/types.h>
-#include <sys/uio.h>
+#include <sys/fcntl.h>
 #include <unistd.h>
 
 extern t_shell g_shell; /* Structure de notre environnement global */
@@ -31,7 +29,9 @@ extern t_shell g_shell; /* Structure de notre environnement global */
 static void    ft_break_this_signal(int signum)
 {
     if (signum == SIGINT)
+    {
         write(STDOUT_FILENO, "\n", 1);
+    }
     // if (signum == SIGTSTP)
     //     main(0, NULL);
     else if (signum == SIGWINCH)
@@ -48,42 +48,48 @@ static void    ft_break_this_signal(int signum)
  */
 static void ft_catch_signals(t_shell *shell)
 {
-    int i;
+    int iter = 1;
 
-    i = 1;
-    while (i < NSIG)
+#pragma unroll NSIG
+    while (iter < NSIG)
     {
-        if (i == SIGINT || i == SIGTSTP || i == SIGWINCH)
+        if (iter == SIGINT || iter == SIGTSTP || iter == SIGWINCH)
         {
-            shell->sigs[i - 1] = signal(i, &ft_break_this_signal);
-            if (shell->sigs[i - 1] == SIG_ERR)
-                ft_log(SH_LOG_LEVEL_FATAL, "signal: catching %d failed", i);
+            shell->sigs[iter - 1] = signal(iter, &ft_break_this_signal);
+            if (shell->sigs[iter - 1] == SIG_ERR)
+            {
+                ft_log(SH_LOG_LEVEL_FATAL, "signal: catching %d failed", iter);
+            }
         }
         else
         {
-            shell->sigs[i - 1] = SIG_ERR;
+            shell->sigs[iter - 1] = SIG_ERR;
         }
-        i++;
+        iter++;
     }
 }
 
-void ft_shell_exec(const char **av, t_shell *shell)
+void ft_shell_exec(const char **argv, t_shell *shell)
 {
-    char    buf[MAX_KEY_SIZE] = { 0 };
-    ssize_t ret               = 1;
+    char buf[MAX_KEY_SIZE] = { 0 };
+    long ret               = 1;
 
-    if (av && *av)
+    if (argv && *argv)
     {
-        shell->terminal.fd = open(av[0], O_RDONLY);
+        shell->terminal.fd = open(argv[0], O_RDONLY | O_CLOEXEC);
         if (shell->terminal.fd == -1)
-            ft_log(SH_LOG_LEVEL_FATAL, "Unable to open file: %s", av[0]);
+        {
+            ft_log(SH_LOG_LEVEL_FATAL, "Unable to open file: %s", argv[0]);
+        }
     }
     else
     {
-        shell->options |= SHELL_INTERACTIVE_MODE;
+        shell->options |= (unsigned int) SHELL_INTERACTIVE_MODE;
         ft_load_termcaps(&shell->terminal, shell);
         if (ft_change_terminal_attributes(&shell->terminal) == 0)
-            shell->options |= SHELL_TERMATTR_LOADED;
+        {
+            shell->options |= (unsigned int) SHELL_TERMATTR_LOADED;
+        }
         ft_catch_signals(shell);
         shell->prompt.print = 1;
     }
@@ -97,7 +103,9 @@ void ft_shell_exec(const char **av, t_shell *shell)
         }
         ret = read(shell->terminal.fd, buf, sizeof(buf));
         if (ret < 0)
+        {
             ft_log(SH_LOG_LEVEL_FATAL, "read: %s", strerror(errno));
+        }
         ft_key_analyser(buf, ret, shell);
     }
 }

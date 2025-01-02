@@ -13,6 +13,7 @@
 #ifndef _FT_TERMIOS_H_
 #define _FT_TERMIOS_H_
 
+#include <_types/_uint8_t.h>
 #include <term.h>
 
 enum
@@ -55,7 +56,7 @@ void ft_init_shell_terminal(t_term *terminal);
  * @param terminal Structure interne Terminal
  * @param restore_attr Indicateur de restoration des attributs du terminal
  */
-void ft_clear_shell_terminal(t_term *terminal, char restore_attr);
+void ft_clear_shell_terminal(t_term *terminal, uint8_t restore_attr);
 
 /**
  * @brief Récupère les dimensions du terminal (lignes et colonnes).

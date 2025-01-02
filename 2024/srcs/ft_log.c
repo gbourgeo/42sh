@@ -11,11 +11,10 @@
 /* ************************************************************************** */
 
 #include "ft_log.h"
-
+#include "ft_constants.h"
 #include "ft_dprintf.h"
 #include "ft_shell.h"
 #include "ft_vdprintf.h"
-
 #include <stdarg.h>
 #include <unistd.h>
 
@@ -39,7 +38,7 @@ void ft_log(log_level_e log_level, const char *err_str, ...)
         { .fd = STDERR_FILENO, .name = "ERROR",   .color = "\033[31m", .status = SHELL_FATAL_STATUS, .quit = 0 }, // red
         { .fd = STDERR_FILENO, .name = "FATAL",   .color = "\033[36m", .status = SHELL_FATAL_STATUS, .quit = 1 }, // cyan
     };
-    va_list argp;
+    va_list argp = {};
 
     va_start(argp, err_str);
     ft_dprintf(log_print[log_level].fd, "%s%s %s: ", log_print[log_level].color, log_print[log_level].name, g_shell.progname);

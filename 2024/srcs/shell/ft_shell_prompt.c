@@ -31,10 +31,10 @@ void ft_shell_prompt(t_shell *shell)
     const char *user = NULL;
     const char *tmp  = NULL;
 
-    pwd              = ft_getenv("PWD", shell);
-    home             = ft_getenv("HOME", shell);
-    user             = ft_getenv("USER", shell);
-    tmp              = "";
+    pwd  = ft_getenv("PWD", shell);
+    home = ft_getenv("HOME", shell);
+    user = ft_getenv("USER", shell);
+    tmp  = "";
     if (ft_strncmp(pwd, home, ft_strlen(home)) == 0)
     {
         tmp = "~";
@@ -46,7 +46,7 @@ void ft_shell_prompt(t_shell *shell)
                                   (user != NULL) ? user : "",
                                   tmp,
                                   pwd)
-                      - 23;
+        - 23;
     ft_get_cursor_position(&shell->terminal);
     shell->prompt.print = 0;
 }

@@ -11,9 +11,7 @@
 /* ************************************************************************** */
 
 #include "ft_command.h"
-
 #include "libft.h"
-
 #include <stdlib.h>
 
 void ft_init_shell_command(t_cmd *command)
@@ -52,9 +50,8 @@ void ft_command_clear(t_cmd *command)
 
 void ft_command_replace(t_cmd *command, char *src, size_t src_len)
 {
-    size_t size;
+    size_t size = command->buffer_size;
 
-    size = command->buffer_size;
     /* Augmentation de la taille du buffer si nécessaire */
     if (src_len >= command->buffer_size)
     {
@@ -72,12 +69,13 @@ void ft_command_replace(t_cmd *command, char *src, size_t src_len)
 
 void ft_command_realloc(t_cmd *command, size_t size)
 {
-    char *save;
+    char *save = command->buffer;
 
-    save = command->buffer;
     /* La taille doit être un multiple de COMMAND_BUFFER_SIZE */
     if (size % COMMAND_BUFFER_SIZE != 0)
+    {
         return;
+    }
     command->buffer = (char *) malloc(size);
     ft_strncpy(command->buffer, save, size);
     command->buffer_size = size;

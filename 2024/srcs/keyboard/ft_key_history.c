@@ -11,6 +11,10 @@
 /* ************************************************************************** */
 
 #include "ft_command.h"
+#include "ft_highlight.h"
+#include "ft_history.h"
+#include "ft_shell.h"
+#include "ft_termios.h"
 #include "ft_termkeys.h"
 #include "libft.h"
 
@@ -20,9 +24,8 @@
  */
 void ft_print_prev_command(t_shell *shell)
 {
-    t_hist *hist;
+    t_hist *hist = shell->history;
 
-    hist = shell->history;
     if (hist)
     {
         /* Premier de l'historique ou il y a un historique précédent */
@@ -35,9 +38,13 @@ void ft_print_prev_command(t_shell *shell)
             ft_term_clear_cursor_and_under(&shell->terminal); /* Efface du curseur jusqu'à la fin de la ligne et celles en dessous */
             /* Sauvegarde du buffer originel */
             if (shell->command.original == NULL)
+            {
                 shell->command.original = ft_strdup(shell->command.buffer);
+            }
             else if (hist->next != NULL)
+            {
                 shell->history = hist->next;
+            }
             ft_command_replace(&shell->command, shell->history->command, shell->history->command_len);
             ft_print_command(shell, 0);
         }
@@ -50,9 +57,8 @@ void ft_print_prev_command(t_shell *shell)
  */
 void ft_print_next_command(t_shell *shell)
 {
-    t_hist *hist;
+    t_hist *hist = shell->history;
 
-    hist = shell->history;
     if (hist)
     {
         /* Il y a un historique suivant ou le dernier historique */

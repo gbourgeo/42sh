@@ -10,6 +10,10 @@
 /*                                                                            */
 /* ************************************************************************** */
 
+#include "ft_command.h"
+#include "ft_highlight.h"
+#include "ft_shell.h"
+#include "ft_termios.h"
 #include "ft_termkeys.h"
 #include "libft.h"
 
@@ -19,11 +23,9 @@
  */
 static void ft_delete_character(t_cmd *command)
 {
-    char  *buffer;
-    size_t pos;
+    char         *buffer = command->buffer;
+    unsigned long pos    = command->pos;
 
-    buffer = command->buffer;
-    pos    = command->pos;
     if (buffer[pos] != '\0')
     {
         ft_strcpy(buffer + pos, buffer + pos + 1);
@@ -38,9 +40,8 @@ static void ft_delete_character(t_cmd *command)
  */
 void ft_delete_character_right(t_shell *shell)
 {
-    t_htext *high;
+    t_htext *high = shell->highlighted.texts;
 
-    high = shell->highlighted.texts;
     /* Cas spécial du caractère dans une zone surlignée */
     if (shell->highlighted.on == 0)
     {
@@ -50,12 +51,17 @@ void ft_delete_character_right(t_shell *shell)
                 && shell->command.pos < high->head)
             {
                 if (shell->command.pos == high->tail)
+                {
                     high->tail += 1;
+                }
                 else
+                {
                     high->head -= 1;
+                }
                 if (high->tail == high->head)
-
+                {
                     break;
+                }
             }
             high = high->next;
         }
@@ -89,14 +95,17 @@ void ft_delete_character_left(t_shell *shell)
  */
 void ft_delete_word_right(t_shell *shell)
 {
-    char *buffer;
+    char *buffer = shell->command.buffer;
 
-    buffer = shell->command.buffer;
     while (ft_iswhitespace(buffer[shell->command.pos]))
+    {
         ft_delete_character_right(shell);
+    }
     while (ft_isprint(buffer[shell->command.pos])
            && !ft_iswhitespace(buffer[shell->command.pos]))
+    {
         ft_delete_character_right(shell);
+    }
 }
 
 /**
@@ -105,14 +114,17 @@ void ft_delete_word_right(t_shell *shell)
  */
 void ft_delete_word_left(t_shell *shell)
 {
-    char *buffer;
+    char *buffer = shell->command.buffer;
 
-    buffer = shell->command.buffer;
     while (shell->command.pos > 0
            && ft_iswhitespace(buffer[shell->command.pos - 1]))
+    {
         ft_delete_character_left(shell);
+    }
     while (shell->command.pos > 0
            && ft_isprint(buffer[shell->command.pos - 1])
            && !ft_iswhitespace(buffer[shell->command.pos - 1]))
+    {
         ft_delete_character_left(shell);
+    }
 }

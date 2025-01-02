@@ -11,7 +11,6 @@
 /* ************************************************************************** */
 
 #include "ft_highlight.h"
-
 #include <stdlib.h>
 
 void ft_init_shell_highlight(t_hlight *hlight)
@@ -26,7 +25,9 @@ t_htext *ft_highlight_get_area(size_t pos, t_htext *htexts)
     while (htexts)
     {
         if (pos >= htexts->tail && pos < htexts->head)
+        {
             break;
+        }
         htexts = htexts->next;
     }
     return (htexts);
@@ -34,9 +35,8 @@ t_htext *ft_highlight_get_area(size_t pos, t_htext *htexts)
 
 t_htext *ft_highlight_remove_area(t_htext *htext)
 {
-    t_htext *ret;
+    t_htext *ret = NULL;
 
-    ret = NULL;
     if (htext != NULL)
     {
         if (htext->prev)
@@ -45,9 +45,13 @@ t_htext *ft_highlight_remove_area(t_htext *htext)
             htext->prev->next = htext->next;
         }
         else
+        {
             ret = htext->next;
+        }
         if (htext->next)
+        {
             htext->next->prev = htext->prev;
+        }
         /* Désallocation de la zone de surlignage */
         free(htext);
     }
@@ -57,16 +61,20 @@ t_htext *ft_highlight_remove_area(t_htext *htext)
 void ft_highlight_remove_all(t_htext **htexts)
 {
     while (*htexts != NULL)
+    {
         *htexts = ft_highlight_remove_area(*htexts);
+    }
 }
 
 t_htext *ft_highlight_sort_area(t_htext *text)
 {
-    t_htext *ptr;
-    size_t   pos;
+    t_htext *ptr = NULL;
+    size_t   pos = 0;
 
     if (text == NULL)
+    {
         return NULL;
+    }
     /* Réarrangement de tail et head */
     if (text->head < text->tail)
     {
@@ -77,7 +85,9 @@ t_htext *ft_highlight_sort_area(t_htext *text)
     }
     ptr = text->next;
     if (ptr == NULL)
+    {
         return (text);
+    }
     if (ptr->head < text->head)
     {
         pos        = ptr->head;

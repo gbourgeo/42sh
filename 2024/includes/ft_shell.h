@@ -56,19 +56,19 @@ enum
 
 typedef struct __attribute__((aligned(LARGE_ALIGNMENT_CONSTANT))) s_shell
 {
-    unsigned int options;      /* Options du shell */
-    int          quit;         /* Valeur définissant si le programme doit se terminer */
-    int          status;       /* Valeur de sortie de la dernière commande exécutée */
+    t_cmd        command;      /* Structure Commande actuelle */
+    t_prompt     prompt;       /* Structure du prompt */
+    t_hlight     highlighted;  /* Structure Texte surligné (pour la copie) */
     const char  *progname;     /* Nom du programme */
     const char  *bin_path;     /* Chemins absolu des binaires */
     char       **global_env;   /* Variables d'environnement globales */
     char       **internal_env; /* Variables d'environnement internes */
-    t_prompt     prompt;       /* Structure du prompt */
-    t_cmd        command;      /* Structure Commande actuelle */
     t_hist      *history;      /* Structure Historique des commandes */
-    t_hlight     highlighted;  /* Structure Texte surligné (pour la copie) */
-    t_term       terminal;     /* Structure du terminal */
     sighandler_t sigs[NSIG];   /* Tableau de sauvegarde des handlers des signaux */
+    t_term       terminal;     /* Structure du terminal */
+    unsigned int options;      /* Options du shell */
+    int          quit;         /* Valeur définissant si le programme doit se terminer */
+    int          status;       /* Valeur de sortie de la dernière commande exécutée */
 } t_shell;
 
 /******************************************************************************
@@ -128,7 +128,7 @@ void         ft_shell_exit(t_shell *shell);
  * @param ret Taille du buffer
  * @param shell Structure interne du Shell
  */
-void         debug_command_line(const char *buf, ssize_t ret, t_shell *shell);
+void         debug_command_line(const char *buf, long ret, t_shell *shell);
 
 /**
  * @brief Fonction de deboggage des tokens après parsing d'une ligne de

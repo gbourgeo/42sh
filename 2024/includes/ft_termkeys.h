@@ -14,7 +14,6 @@
 #define FT_TERMKEYS_H
 
 #include "ft_shell.h"
-
 #include <stddef.h>
 
 #define MAX_KEY_SIZE 16
@@ -25,7 +24,7 @@
  * int: Longueur de la combinaison de touche.
  * void(*)(t_shell*): Fonction gérant la combinaison.
  */
-typedef struct s_special_key
+typedef struct __attribute__((aligned(SOFT_ALIGNMENT_CONSTANT))) s_special_key
 {
     char code[16];
     int  code_len;
@@ -42,7 +41,7 @@ typedef struct s_special_key
  * @param[in] len Longueur ligne de commande
  * @param[in] shell Structure interne du shell
  */
-void ft_key_analyser(const char *buffer, ssize_t len, t_shell *shell);
+void ft_key_analyser(const char *buffer, long len, t_shell *shell);
 
 /**
  * @brief Fonction de réinitialisation de la ligne de commande. Annule la
@@ -86,8 +85,8 @@ void ft_move_cursor_up(t_shell *shell);
 void ft_move_cursor_down(t_shell *shell);
 void ft_move_word_right(t_shell *shell);
 void ft_move_word_left(t_shell *shell);
-void ft_move_shift_right(t_shell *shell);
-void ft_move_shift_left(t_shell *shell);
+// void ft_move_shift_right(t_shell *shell);
+// void ft_move_shift_left(t_shell *shell);
 void ft_insert_character(char c, t_shell *shell);
 void ft_print_character(t_shell *shell);
 void ft_print_prev_command(t_shell *shell);

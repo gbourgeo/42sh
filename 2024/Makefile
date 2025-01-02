@@ -15,27 +15,27 @@ NAME	= 42sh
 OBJ_DIR = obj/
 
 SRC_DIR = srcs/
-SRC	 = ft_shell.c			\
-		ft_debug.c			  \
+SRC	 = ft_shell.c				\
+		ft_debug.c				\
 		ft_log.c				\
-		ft_fork.c			   \
-		ft_frees.c			  \
-		ft_get_path.c		   \
+		ft_fork.c				\
+		ft_frees.c				\
+		ft_get_path.c			\
 		ft_history.c			\
-		ft_check_and_exec.c	 \
+		ft_check_and_exec.c		\
 		ft_termios_functions.c
 SRC_OBJ = $(addprefix $(OBJ_DIR), $(SRC:.c=.o))
 
 BUILTINS_DIR = $(SRC_DIR)builtins/
-BUILTINS_SRC = ft_cd.c		  \
-			ft_cd_check.c	   \
-			ft_cd_change_pwds.c \
-			ft_echo.c		   \
+BUILTINS_SRC = ft_cd.c			\
+			ft_cd_check.c		\
+			ft_cd_change_pwds.c	\
+			ft_echo.c			\
 			ft_env.c			\
-			ft_exit.c		   \
-			ft_getcwd.c		 \
-			ft_getenv.c		 \
-			ft_setenv.c		 \
+			ft_exit.c			\
+			ft_getcwd.c			\
+			ft_getenv.c			\
+			ft_setenv.c			\
 			ft_unsetenv.c
 SRC_OBJ += $(addprefix $(OBJ_DIR), $(BUILTINS_SRC:.c=.o))
 
@@ -44,8 +44,8 @@ COMMAND_SRC = ft_command.c
 SRC_OBJ += $(addprefix $(OBJ_DIR), $(COMMAND_SRC:.c=.o))
 
 HIGHLIGHT_DIR = $(SRC_DIR)highlight/
-HIGHLIGHT_SRC = ft_highlight.c		  \
-				ft_highlight_mode.c	 \
+HIGHLIGHT_SRC = ft_highlight.c			\
+				ft_highlight_mode.c		\
 				ft_highlight_paste.c	\
 				ft_highlight_yank.c
 SRC_OBJ += $(addprefix $(OBJ_DIR), $(HIGHLIGHT_SRC:.c=.o))
@@ -56,44 +56,44 @@ SRC_OBJ += $(addprefix $(OBJ_DIR), $(HISTORY_SRC:.c=.o))
 
 KEYBOARD_DIR = $(SRC_DIR)keyboard/
 KEYBOARD_SRC = ft_key_analyser.c	\
-			 ft_key_control.c	   \
-			 ft_key_history.c	   \
-			 ft_key_move.c		  \
-			 ft_key_print.c		 \
+			 ft_key_control.c		\
+			 ft_key_history.c		\
+			 ft_key_move.c			\
+			 ft_key_print.c			\
 			 ft_key_suppr.c
 #			 ft_key_shift.c
 SRC_OBJ += $(addprefix $(OBJ_DIR), $(KEYBOARD_SRC:.c=.o))
 
 PIPEX_DIR = $(SRC_DIR)pipex/
-PIPEX_SRC = ft_pipe_left.c	  \
-			ft_pipe_pipe.c	  \
+PIPEX_SRC = ft_pipe_left.c		\
+			ft_pipe_pipe.c		\
 			ft_pipe_rights.c	\
 			ft_pipex_or_exec.c
 SRC_OBJ += $(addprefix $(OBJ_DIR), $(PIPEX_SRC:.c=.o))
 
 REDIRECTION_DIR = $(SRC_DIR)redirections/
-REDIRECTION_SRC = ft_argsnew.c  \
-		ft_lexical_analysis.c   \
-		ft_parser.c			 \
-		ft_token.c			  \
-		ft_pipes_errors.c	   \
-		ft_separators_errors.c  \
+REDIRECTION_SRC = ft_argsnew.c	\
+		ft_lexical_analysis.c	\
+		ft_parser.c				\
+		ft_token.c				\
+		ft_pipes_errors.c		\
+		ft_separators_errors.c	\
 		ft_syntax_analysis.c
 SRC_OBJ += $(addprefix $(OBJ_DIR), $(REDIRECTION_SRC:.c=.o))
 
 SHELL_DIR = $(SRC_DIR)shell/
-SHELL_SRC = ft_shell_exec.c	 \
-			ft_shell_exit.c	 \
-			ft_shell_init.c	 \
-			ft_shell_options.c  \
+SHELL_SRC = ft_shell_exec.c		\
+			ft_shell_exit.c		\
+			ft_shell_init.c		\
+			ft_shell_options.c	\
 			ft_shell_prompt.c
 SRC_OBJ += $(addprefix $(OBJ_DIR), $(SHELL_SRC:.c=.o))
 
 TERMINAL_DIR = $(SRC_DIR)terminal/
-TERMINAL_SRC = ft_shell_exec.c	 \
-			ft_shell_exit.c	 \
-			ft_shell_init.c	 \
-			ft_shell_options.c  \
+TERMINAL_SRC = ft_shell_exec.c	\
+			ft_shell_exit.c		\
+			ft_shell_init.c		\
+			ft_shell_options.c	\
 			ft_shell_prompt.c
 SRC_OBJ += $(addprefix $(OBJ_DIR), $(TERMINAL_SRC:.c=.o))
 
@@ -110,29 +110,9 @@ INCLUDES = -I includes -I $(LIBFT)includes
 
 LIBRAIRIES = -L$(LIBFT) -lft -ltermcap
 
-.PHONY: debugging profiling coverage libft shell clean fclean re
+.PHONY: libft shell clean fclean re debug profile coverage
 
-all: debugging profiling coverage libft shell $(NAME)
-
-debugging:
-ifdef debug
-	@echo "Debugging mode enabled !"
-CFLAGS += -g3
-endif
-
-profiling:
-ifdef prof
-	@echo "Profiling mode enabled !"
-CFLAGS += -g -pg
-LIBRAIRIES += -pg
-endif
-
-coverage:
-ifdef cov
-	@echo "Coverage mode enabled !" $(GCOV_CFLAGS) " - " $(GCOV_LIBS)
-CFLAGS += -O0 -g --coverage
-LIBRAIRIES += --coverage
-endif
+all: libft shell $(NAME)
 
 libft:
 	@make -j -sC $(LIBFT)
@@ -198,3 +178,20 @@ fclean: clean
 	/bin/rm -rf $(NAME) 42sh.html
 
 re: fclean all
+
+debug:
+	@echo "[Debug mode enabled]"
+debug: CFLAGS += -g3
+debug: re
+
+profile:
+	@echo "[Profiling mode enabled]"
+profile: CFLAGS += -g -pg
+profile: LIBRAIRIES += -pg
+profile: re
+
+coverage:
+	@echo "[Coverage mode enabled]"
+coverage: CFLAGS += -O0 -g --coverage
+coverage: LIBRAIRIES += --coverage
+coverage: re

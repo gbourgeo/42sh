@@ -16,7 +16,6 @@
 #include "ft_shell.h"
 #include "ft_termios.h"
 #include "ft_termkeys.h"
-
 #include <unistd.h>
 
 void ft_control_c(t_shell *shell)
@@ -34,5 +33,7 @@ void ft_control_c(t_shell *shell)
 void ft_control_d(t_shell *shell)
 {
     if (shell->command.buffer_len == 0)
+    {
         ft_exit(NULL, shell);
+    }
 }

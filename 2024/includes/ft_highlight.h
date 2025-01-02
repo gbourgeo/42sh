@@ -13,9 +13,10 @@
 #ifndef FT_HIGHLIGHT_H
 #define FT_HIGHLIGHT_H
 
+#include "ft_constants.h"
 #include <stddef.h>
 
-typedef struct s_highlighted_text
+typedef struct __attribute__((aligned(SOFT_ALIGNMENT_CONSTANT))) s_highlighted_text
 {
     size_t                     head; /* Dernier caractère surligné de la commande */
     size_t                     tail; /* Premier caractère surligné de la commande */
@@ -23,7 +24,7 @@ typedef struct s_highlighted_text
     struct s_highlighted_text *prev; /* Texte surligné précédent */
 } t_htext;
 
-typedef struct s_highlight
+typedef struct __attribute__((aligned(SOFT_ALIGNMENT_CONSTANT))) s_highlight
 {
     char     on;    /* Indique si le mode de surlignage est actif ou non */
     t_htext *texts; /* Liste simplement chainé de textes surlignés */

@@ -13,6 +13,7 @@
 #ifndef FT_COMMAND_H
 #define FT_COMMAND_H
 
+#include "ft_constants.h"
 #include <stddef.h>
 
 #define COMMAND_BUFFER_SIZE 1024
@@ -25,7 +26,7 @@
  * - pos            Position d'écriture dans la commande
  * - original       Commande originale sans historique
  */
-typedef struct s_command
+typedef struct __attribute((aligned(MEDIUM_ALIGNMENT_CONSTANT))) s_command
 {
     char  *buffer;      /* Commande */
     size_t buffer_len;  /* Longueur de la commande */

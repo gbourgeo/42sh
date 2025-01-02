@@ -14,7 +14,6 @@
 #define FT_TOKEN_H
 
 #include "ft_constants.h"
-
 #include <stddef.h>
 
 typedef enum token_type
@@ -52,12 +51,12 @@ typedef enum char_type
     IS_A_SEPARATOR  = 0x20, // 2^5
 } e_char_type;
 
-#define CHARACTER_IS_A_QUOTE(value)      (((unsigned char *) &(value))[0] & IS_A_QUOTE)
-#define CHARACTER_IS_AN_OPERATOR(value)  (((unsigned char *) &(value))[0] & IS_AN_OPERATOR)
-#define CHARACTER_IS_A_COMMENT(value)    (((unsigned char *) &(value))[0] & IS_A_COMMENT)
-#define CHARACTER_IS_AN_EXPANSION(value) (((unsigned char *) &(value))[0] & IS_AN_EXPANSION)
-#define CHARACTER_IS_A_DELIMITER(value)  (((unsigned char *) &(value))[0] & IS_A_DELIMITER)
-#define CHARACTER_IS_A_SEPARATOR(value)  (((unsigned char *) &(value))[0] & IS_A_SEPARATOR)
+#define CHARACTER_IS_A_QUOTE(value)      (((unsigned char *) &(value))[0] & (unsigned int) IS_A_QUOTE)
+#define CHARACTER_IS_AN_OPERATOR(value)  (((unsigned char *) &(value))[0] & (unsigned int) IS_AN_OPERATOR)
+#define CHARACTER_IS_A_COMMENT(value)    (((unsigned char *) &(value))[0] & (unsigned int) IS_A_COMMENT)
+#define CHARACTER_IS_AN_EXPANSION(value) (((unsigned char *) &(value))[0] & (unsigned int) IS_AN_EXPANSION)
+#define CHARACTER_IS_A_DELIMITER(value)  (((unsigned char *) &(value))[0] & (unsigned int) IS_A_DELIMITER)
+#define CHARACTER_IS_A_SEPARATOR(value)  (((unsigned char *) &(value))[0] & (unsigned int) IS_A_SEPARATOR)
 #define CHARACTER_IS_NEWLINE(value)      value == '\n'
 #define CHARACTER_IS_QUOTED(value)       (((unsigned char *) &(value))[1] != 0)
 #define QUOTE_VALUE(value)               (((unsigned char *) &(value))[1])

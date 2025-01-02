@@ -14,6 +14,7 @@
 #include "ft_shell.h"
 #include "ft_token.h"
 #include "libft.h"
+#include <stdlib.h>
 
 // static void     ft_exec_pipes(t_args *list, t_shell *e)
 // {

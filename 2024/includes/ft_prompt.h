@@ -15,7 +15,7 @@
 
 #include <stddef.h>
 
-typedef struct s_prompt
+typedef struct __attribute__((aligned(SOFT_ALIGNMENT_CONSTANT))) s_prompt
 {
     char  *str;   /* Prompt string */
     size_t len;   /* Longueur du prompt */

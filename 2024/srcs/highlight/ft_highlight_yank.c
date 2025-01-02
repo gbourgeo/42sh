@@ -14,20 +14,16 @@
 #include "ft_shell.h"
 #include "ft_termios.h"
 #include "libft.h"
-
 #include <stdlib.h>
 
 void ft_highlight_yank(t_shell *shell)
 {
-    t_htext *text;
-    char    *yank;
-    size_t   len;
-    int      col;
-    int      line;
+    t_htext *text = NULL;
+    char    *yank = NULL;
+    size_t   len  = 0;
+    int      col  = 0;
+    int      line = 0;
 
-    text = NULL;
-    yank = NULL;
-    len  = 0;
     ft_highlight_sort_area(shell->highlighted.texts);
     ft_freestr(&shell->highlighted.yank);
     while (shell->highlighted.texts)
@@ -46,10 +42,12 @@ void ft_highlight_yank(t_shell *shell)
     shell->highlighted.on = 0;
 
     /* On se déplace au début de la commande */
-    col                   = shell->terminal.current_column - (shell->command.pos % shell->terminal.max_column);
+    col = (int) (shell->terminal.current_column - (shell->command.pos % shell->terminal.max_column));
     if (col < 0)
+    {
         col = shell->terminal.max_column + col + 1;
-    line = shell->terminal.current_line - ((shell->command.pos + shell->prompt.len) / (shell->terminal.max_column + 1));
+    }
+    line = (int) (shell->terminal.current_line - ((shell->command.pos + shell->prompt.len) / (shell->terminal.max_column + 1)));
     ft_term_move_cursor(&shell->terminal, col, line);
     ft_term_clear_modes(&shell->terminal); /* Désactive tous les modes actifs */
     // ft_term_clear_line_and_under(&shell->terminal); /* Efface depuis le curseur jusqu'à la fin du terminal */

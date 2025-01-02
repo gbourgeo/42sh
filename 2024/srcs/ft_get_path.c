@@ -11,11 +11,12 @@
 /* ************************************************************************** */
 
 #include "libft.h"
+#include <stdlib.h>
 
 static char *ft_generate_path_from_table(char **table)
 {
-    char *path;
-    char *tmp;
+    char *path = NULL;
+    char *tmp  = NULL;
 
     path = ft_strdup("/");
     while (table && *table != NULL)
@@ -29,31 +30,31 @@ static char *ft_generate_path_from_table(char **table)
     return (path);
 }
 
-static int ft_remove_field_from_table(char **table, int i, int times)
+static int ft_remove_field_from_table(char **table, int pos, int times)
 {
-    int tablen;
-    int t;
+    int tablen = 0;
+    int repeat = 0;
 
     tablen = ft_tablen(table);
-    t      = times;
-    while (t-- && i >= 0)
+    repeat = times;
+    while (repeat-- && pos >= 0)
     {
-        free(table[i]);
-        table[i] = NULL;
-        i--;
+        free(table[pos]);
+        table[pos] = NULL;
+        pos--;
     }
-    t = i + 1;
-    while (t + times < tablen)
+    repeat = pos + 1;
+    while (repeat + times < tablen)
     {
-        table[t] = table[t + times];
-        t++;
+        table[repeat] = table[repeat + times];
+        repeat++;
     }
-    while (t < tablen)
+    while (repeat < tablen)
     {
-        table[t] = NULL;
-        t++;
+        table[repeat] = NULL;
+        repeat++;
     }
-    return (i + 1);
+    return (pos + 1);
 }
 
 /**
@@ -66,21 +67,30 @@ static int ft_remove_field_from_table(char **table, int i, int times)
  */
 char *ft_get_path(char *pwd)
 {
-    char **table;
-    char  *ret;
-    int    i;
+    char **table = NULL;
+    char  *ret   = NULL;
+    int    iter  = 0;
 
-    i   = 0;
-    ret = NULL;
-    if ((table = ft_strsplit(pwd, '/')) == NULL)
+    table = ft_strsplit(pwd, '/');
+    if (table == NULL)
+    {
         return (ret);
-    while (table[i] != NULL)
-        if (ft_strcmp(table[i], "..") == 0)
-            i = ft_remove_field_from_table(table, i, 2);
-        else if (ft_strcmp(table[i], ".") == 0)
-            i = ft_remove_field_from_table(table, i, 1);
+    }
+    while (table[iter] != NULL)
+    {
+        if (ft_strcmp(table[iter], "..") == 0)
+        {
+            iter = ft_remove_field_from_table(table, iter, 2);
+        }
+        else if (ft_strcmp(table[iter], ".") == 0)
+        {
+            iter = ft_remove_field_from_table(table, iter, 1);
+        }
         else
-            i++;
+        {
+            iter++;
+        }
+    }
     ret = ft_generate_path_from_table(table);
     ft_freetab(&table);
     free(pwd);
