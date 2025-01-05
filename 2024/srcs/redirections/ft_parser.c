@@ -97,7 +97,7 @@ void ft_parse_command(t_shell *shell)
     char    *cmd        = NULL;
     t_args  *list       = NULL;
 
-    ft_token_recognition(&token_list, shell->command.buffer, ft_getenv("IFS", shell));
+    ft_token_recognition(&token_list, shell->command.buffer, "", ft_getenv("IFS", shell));
     debug_tokens(token_list, shell);
     // if ((cmd = ft_lexical_analysis(shell->command.buffer))
     // && (args = ft_split_whitespaces(cmd))

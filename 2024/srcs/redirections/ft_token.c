@@ -16,6 +16,26 @@
 #include <stdlib.h>
 
 /**
+ * @brief Création d'un nouveau token.
+ * @param type Type du nouveau token
+ * @param pos Position de départ du nouveau token
+ * @return Nouveau token.
+ */
+static t_token *ft_token_new(e_token_type type, size_t pos)
+{
+    t_token *token = (t_token *) malloc(sizeof(*token));
+
+    if (token != NULL)
+    {
+        token->type = type;
+        token->tail = pos;
+        token->head = pos;
+        token->next = NULL;
+    }
+    return (token);
+}
+
+/**
  * @brief Fin d'un token.
  * @param token Pointeur sur le token en cours
  * @param head Position de fin du token
@@ -77,27 +97,11 @@ static t_token **ft_token_end(t_token **token, size_t head, const char *command)
             (*token)->type = OPERATOR_RIGHT_PARENTHESIS;
         }
     }
-    return (&(*token)->next);
-}
-
-/**
- * @brief Création d'un nouveau token.
- * @param type Type du nouveau token
- * @param pos Position de départ du nouveau token
- * @return Nouveau token.
- */
-static t_token *ft_token_new(e_token_type type, size_t pos)
-{
-    t_token *token = (t_token *) malloc(sizeof(*token));
-
-    if (token != NULL)
+    /* Reconnaissasnce d'un mot réservé */
+    else if ()
     {
-        token->type = type;
-        token->tail = pos;
-        token->head = pos;
-        token->next = NULL;
+        return (&(*token)->next);
     }
-    return (token);
 }
 
 /**
@@ -113,6 +117,14 @@ static unsigned char is_special(const char *command, size_t pos, const char *ifs
     {
         return (IS_A_QUOTE);
     }
+    if (command[pos] == '$' || command[pos] == '`')
+    {
+        return (IS_AN_EXPANSION);
+    }
+    // if (command[pos] == ')' || command[pos] == '}')
+    // {
+    //     return (IS_A_DELIMITER);
+    // }
     if (command[pos] == '&' || command[pos] == '|' || command[pos] == ';' || command[pos] == '<'
         || command[pos] == '>')
     {
@@ -122,14 +134,6 @@ static unsigned char is_special(const char *command, size_t pos, const char *ifs
         || (command[pos] == '/' && (command[pos + 1] == '*' || command[pos + 1] == '/')))
     {
         return (IS_A_COMMENT);
-    }
-    if (command[pos] == '$' || command[pos] == '`')
-    {
-        return (IS_AN_EXPANSION);
-    }
-    if (command[pos] == '(' || command[pos] == ')' || command[pos] == '{' || command[pos] == '}')
-    {
-        return (IS_A_DELIMITER);
     }
     if (ifs != NULL)
     {
@@ -153,49 +157,55 @@ static unsigned char is_special(const char *command, size_t pos, const char *ifs
  * @param command Comman`de
  * @return 0 ne peut pas être ajouté, 1 autrement.
  */
-static char can_form_an_operator(t_token *token, size_t head, const char *command)
+static char can_form_an_operator(t_token **token, size_t head, const char *command)
 {
-    size_t pos = token->tail;
-    size_t len = head - pos + 1;
+    size_t pos = 0;
+    size_t len = 0;
 
+    if (token == NULL || *token == NULL)
+    {
+        return (0);
+    }
+    pos = (*token)->tail;
+    len = head - pos + 1;
     if (ft_strncmp(&command[pos], "&&", len) == 0)
     {
-        token->type = OPERATOR_AND;
+        (*token)->type = OPERATOR_AND;
         return (1);
     }
     if (ft_strncmp(&command[pos], "||", len) == 0)
     {
-        token->type = OPERATOR_OR;
+        (*token)->type = OPERATOR_OR;
         return (1);
     }
     if (ft_strncmp(&command[pos], "<&", len) == 0)
     {
-        token->type = OPERATOR_DUPLICATE_INPUT_REDIRECTION;
+        (*token)->type = OPERATOR_DUPLICATE_INPUT_REDIRECTION;
         return (1);
     }
     if (ft_strncmp(&command[pos], "<>", len) == 0)
     {
-        token->type = OPERATOR_READ_WRITE_REDIRECTION;
+        (*token)->type = OPERATOR_READ_WRITE_REDIRECTION;
         return (1);
     }
     if (ft_strncmp(&command[pos], ">&", len) == 0)
     {
-        token->type = OPERATOR_DUPLICATE_OUTPUT_REDIRECTION;
+        (*token)->type = OPERATOR_DUPLICATE_OUTPUT_REDIRECTION;
         return (1);
     }
     if (ft_strncmp(&command[pos], ">|", len) == 0)
     {
-        token->type = OPERATOR_OUTPUT_REDIRECTION;
+        (*token)->type = OPERATOR_OUTPUT_REDIRECTION;
         return (1);
     }
     if (ft_strncmp(&command[pos], ">>", len) == 0)
     {
-        token->type = OPERATOR_APPEND_OUTPUT_REDIRECTION;
+        (*token)->type = OPERATOR_APPEND_OUTPUT_REDIRECTION;
         return (1);
     }
     if (ft_strncmp(&command[pos], "<<-", len) == 0) // Permet de valider "<<" et "<<-"
     {
-        token->type = HERE_DOCUMENT;
+        (*token)->type = HERE_DOCUMENT;
         return (1);
     }
     return (0);
@@ -206,55 +216,73 @@ static char can_form_an_operator(t_token *token, size_t head, const char *comman
  * @param token Token à vérifier
  * @return 0 le token n'est pas un opérateur, 1 autrement.
  */
-static char token_is_an_operator(const t_token *token)
+static int token_is_an_operator(const t_token **token)
 {
-    return (char) (token != NULL
-                   && (token->type == OPERATOR || token->type == OPERATOR_AMPERSAND
-                       || token->type == OPERATOR_PIPE || token->type == OPERATOR_SEMICOLON
-                       || token->type == OPERATOR_INPUT_REDIRECTION
-                       || token->type == OPERATOR_OUTPUT_REDIRECTION
-                       || token->type == OPERATOR_LEFT_PARENTHESIS
-                       || token->type == OPERATOR_RIGHT_PARENTHESIS || token->type == OPERATOR_AND
-                       || token->type == OPERATOR_OR || token->type == OPERATOR_DUPLICATE_INPUT_REDIRECTION
-                       || token->type == OPERATOR_DUPLICATE_OUTPUT_REDIRECTION
-                       || token->type == OPERATOR_READ_WRITE_REDIRECTION
-                       || token->type == OPERATOR_APPEND_OUTPUT_REDIRECTION
-                       || token->type == HERE_DOCUMENT));
+    return (token != NULL && *token != NULL
+            && ((*token)->type == OPERATOR || (*token)->type == OPERATOR_AMPERSAND
+                || (*token)->type == OPERATOR_PIPE || (*token)->type == OPERATOR_SEMICOLON
+                || (*token)->type == OPERATOR_INPUT_REDIRECTION
+                || (*token)->type == OPERATOR_OUTPUT_REDIRECTION
+                || (*token)->type == OPERATOR_LEFT_PARENTHESIS
+                || (*token)->type == OPERATOR_RIGHT_PARENTHESIS || (*token)->type == OPERATOR_AND
+                || (*token)->type == OPERATOR_OR || (*token)->type == OPERATOR_DUPLICATE_INPUT_REDIRECTION
+                || (*token)->type == OPERATOR_DUPLICATE_OUTPUT_REDIRECTION
+                || (*token)->type == OPERATOR_READ_WRITE_REDIRECTION
+                || (*token)->type == OPERATOR_APPEND_OUTPUT_REDIRECTION
+                || (*token)->type == HERE_DOCUMENT));
 }
 
-// static char can_form_an_expansion(t_token *token, size_t head, const char
-// *command)
-// {
-//     size_t  len;
-//     size_t  pos;
+static int token_is_a_newline(const t_token **token)
+{
+    return (token != NULL && *token != NULL && (*token)->type == NEWLINE);
+}
 
-//     len = head - token->tail + 1;
-//     pos = token->tail;
-//     if (ft_strncmp(&command[pos], "$", len) == 0)
-//     {
-//         token->type = -1;
-//         return (1);
-//     }
-//     if (ft_strncmp(&command[pos], "${", len) == 0)
-//     {
-//         token->type = -1;
-//         return (1);
-//     }
-//     if (ft_strncmp(&command[pos], "$(", len) == 0 || ft_strncmp(&command[pos],
-//     "`", len) == 0)
-//     {
-//         token->type = -1;
-//         return (1);
-//     }
-//     if (ft_strncmp(&command[pos], "$((", len) == 0)
-//     {
-//         token->type = -1;
-//         return (1);
-//     }
-//     return (0);
-// }
+static size_t can_form_an_expansion(t_token **token, size_t head, const char *command, const char *ifs)
+{
+    if (*token == NULL)                         // Si le token courant est NULL...
+    {
+        *token = ft_token_new(EXPANSION, head); // Création d'un nouveau token !
+    }
+    else
+    {
+        (*token)->type = EXPANSION;
+    }
+    if (command[head] == '`') // Backquotes : Command Substitution
+    {
+        head += ft_token_recognition(&(*token)->token, command + head + 1, "`", ifs);
+    }
+    if (command[head] == '$')
+    {
+        if (command[head + 1] == '{') // ${ : Parameter Expansion
+        {
+            head += ft_token_recognition(&(*token)->token, command + head + 2, "}", ifs);
+        }
+        else if (command[head + 1] == '(')
+        {
+            if (command[head + 2] == '(') // $(( : Arithmetic Expansion
+            {
+                head += ft_token_recognition(&(*token)->token, command + head + 3, "))", ifs);
+            }
+            else // $( : Command Substitution
+            {
+                head += ft_token_recognition(&(*token)->token, command + head + 2, ")", ifs);
+            }
+        }
+    }
+    (*token)->head = head;
+    return (head);
+}
 
-void ft_token_recognition(t_token **token, const char *command, const char *ifs)
+static int is_end_of_input(const char *start, const char *end_of_input)
+{
+    if (end_of_input == NULL || end_of_input[0] == '\0')
+    {
+        return (0);
+    }
+    return (ft_strncmp(start, end_of_input, ft_strlen(end_of_input)) == 0);
+}
+
+size_t ft_token_recognition(t_token **token, const char *command, const char *end_of_input, const char *ifs)
 {
     t_token      **current_token = token;
     size_t         iter          = 0;
@@ -263,61 +291,71 @@ void ft_token_recognition(t_token **token, const char *command, const char *ifs)
     /**
      * "character" fonctionne comme ceci:
      * 00000000   00000000   <- début
-     * caractère      ||||__ bit indiquant que le caractère courant est une quote
-     * de quote       |||___ bit indiquant que le caractère courant est un opérateur
-     * ou d'          ||____ bit indiquant que le caractère courant est une expansion
-     * expansion      |_____ bit indiquant que le caractère courant est un séparateur de mot
+     * caractère     |||||__ bit indiquant que le caractère courant est une quote
+     * de quote      ||||___ bit indiquant que le caractère courant est un opérateur
+     * ou d'         |||____ bit indiquant que le caractère courant est un commentaire
+     * expansion     ||_____ bit indiquant que le caractère courant est un séparateur de mot
+     *               |______ bit indiquant que le caractère courant est un délimiteur d'expansion
      */
 
-    while (command[iter])
+    while (command[iter] != '\0')
     {
         ((unsigned char *) &character)[0] &= ~0xff; // Remet les 8 premiers bits à 0.
         ((unsigned char *) &character)[0] |= is_special(command, iter, ifs);
 
-        if (token_is_an_operator(*current_token))                             // Si le token courant est un opérateur...
+        if (is_end_of_input(command + iter, end_of_input)) // Caractères de fin ...
         {
-            if ((CHARACTER_IS_AN_OPERATOR(character) || command[iter] == '-') // Si le caractère courant est un opérateur ou '-'
-                && can_form_an_operator(*current_token, iter, command))       // Et qu'ils peuvent former un opérateur...
+            if (!CHARACTER_IS_QUOTED(character))           // ET qu'ils ne sont pas quotés ...
+            {
+                iter += ft_strlen(end_of_input);           // Incrément de l'itérateur
+                break;                                     // Fin !
+            }
+        }
+        if (token_is_an_operator((const t_token **) current_token))           // Si le token courant est un opérateur ...
+        {
+            if ((CHARACTER_IS_AN_OPERATOR(character) || command[iter] == '-') // Si le caractère courant est un opérateur ou '-',
+                && can_form_an_operator(current_token, iter, command))        // Et qu'ils peuvent former un opérateur ...
             {
                 iter++;
-                continue; // Caractère suivant.
+                continue;                                                        // Caractère suivant.
             }
-            current_token = ft_token_end(current_token, iter,
-                                         command);                           // Fin de token !
+            current_token = ft_token_end(current_token, iter, command);          // Sinon fin de token !
         }
-        if (CHARACTER_IS_AN_OPERATOR(character))                             // Si le caractère courant est un opérateur...
+        if (CHARACTER_IS_A_QUOTE(character))                                     // Si le caractère courant est une quote ... ( \ ou " ou ' )
         {
-            if (!CHARACTER_IS_QUOTED(character))                             // ET qu'il n'est pas déjà quotée...
+            if (!CHARACTER_IS_QUOTED(character))                                 // ET qu'il n'est pas quoté ...
             {
-                current_token  = ft_token_end(current_token, iter, command); // Fin de token !
-                *current_token = ft_token_new(OPERATOR, iter);               // Création d'un nouveau token !
-            }
-        }
-        else if (CHARACTER_IS_A_QUOTE(character))                                // Si le caractère courant est une quote... (\ ou " ou ')
-        {
-            if (!CHARACTER_IS_QUOTED(character))                                 // ET qu'il n'est pas quoté...
-            {
-                QUOTE_VALUE(character) = command[iter];                          // Sauvegarde du caractère de quote,
-                if (*current_token == NULL)                                      // Si le nouveau token est NULL...
+                QUOTE_VALUE(character) = command[iter];                          // Sauvegarde du caractère de quote.
+                if (*current_token == NULL)                                      // Si le nouveau token est NULL ...
                 {
                     current_token  = ft_token_end(current_token, iter, command); // Fin de token !
                     *current_token = ft_token_new(TOKEN, iter);                  // Création d'un nouveau token !
                 }
             }
-            else if (QUOTE_VALUE(character) == (unsigned char) command[iter]) // OU qu'elle est la même que celle sauvegardée,
+            else if (QUOTE_VALUE(character) == (unsigned char) command[iter]) // OU qu'il termine la quote existante,
             {
                 QUOTE_VALUE(character) = 0;                                   // Reset de la quote sauvegardée.
             }
         }
-        else if (CHARACTER_IS_AN_EXPANSION(character))
+        else if (CHARACTER_IS_AN_EXPANSION(character)) // Si le caractère courant est le début d'une expansion ... ( $ ou ` )
         {
-            if (!CHARACTER_IS_QUOTED(character)) // ET qu'il n'est pas quoté...
+            if (!CHARACTER_IS_QUOTED(character))       // ET qu'il n'est pas quoté ...
             {
+                iter = can_form_an_expansion(current_token, iter, command, ifs);
+            }
+        }
+        else if (CHARACTER_IS_AN_OPERATOR(character))                        // Si le caractère courant est un opérateur ...
+        {
+            if (!CHARACTER_IS_QUOTED(character))                             // ET qu'il n'est pas déjà quotée ...
+            {
+                current_token  = ft_token_end(current_token, iter, command); // Fin de token !
+                *current_token = ft_token_new(OPERATOR, iter);               // Création d'un nouveau token !
             }
         }
         else if (CHARACTER_IS_NEWLINE(command[iter]))                        // Si le caractère courant est une newline (\n)...
         {
-            if (!CHARACTER_IS_QUOTED(character))                             // ET qu'il n'est pas quoté...
+            if (!CHARACTER_IS_QUOTED(character)                              // Qu'il n'est pas quoté...
+                && !token_is_a_newline((const t_token **) current_token))    // Et que le token n'est pas de type NEWLINE ...
             {
                 current_token  = ft_token_end(current_token, iter, command); // Fin de token !
                 *current_token = ft_token_new(NEWLINE, iter);                // Création d'un nouveau token !
@@ -353,18 +391,21 @@ void ft_token_recognition(t_token **token, const char *command, const char *ifs)
                 }
             }
         }
-        else if (*current_token == NULL)                // Si le token courant est NULL...
+        if (*current_token == NULL && !CHARACTER_IS_A_SEPARATOR(character)) // Si le token courant est NULL et pas un séparateur de mot ...
         {
-            *current_token = ft_token_new(TOKEN, iter); // Création d'un nouveau token !
+            *current_token = ft_token_new(TOKEN, iter);                     // Création d'un nouveau token !
         }
-        if (QUOTE_VALUE(character) == '\\' && iter > 0  // Si le caractère de quote est '\' et que le
-            && command[iter - 1] == '\\')               // caractère précédent était un '\'...
+        if (QUOTE_VALUE(character) == '\\' && iter > 0                      // Si le caractère de quote est '\' et que le
+            && command[iter - 1] == '\\')                                   // caractère précédent était un '\'...
         {
-            QUOTE_VALUE(character) = 0;                 // Reset de la quote sauvegardée.
+            QUOTE_VALUE(character) = 0;                                     // Reset de la quote sauvegardée.
         }
         iter++;
     }
+
     (void) ft_token_end(current_token, iter, command); // Fin de token !
+
+    return (iter);
 }
 
 void ft_free_token_list(t_token *token)

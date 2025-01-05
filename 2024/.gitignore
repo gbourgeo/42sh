@@ -1,7 +1,5 @@
 42sh
 obj/
-.vscode/
 gmon.out
 *.gcov
 *.html
-.clangd

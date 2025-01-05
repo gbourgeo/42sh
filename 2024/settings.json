@@ -1,0 +1,44 @@
+{
+    "[c]": {
+        "editor.wordBasedSuggestions": "currentDocument",
+        "editor.semanticHighlighting.enabled": true,
+        "editor.stickyScroll.defaultModel": "foldingProviderModel",
+        "editor.suggest.insertMode": "replace"
+    },
+    "editor.formatOnPaste": false,
+    "editor.formatOnSave": true,
+    "C_Cpp.formatting": "clangFormat",
+    "C_Cpp.clang_format_path": "/opt/homebrew/opt/llvm/bin/clang-format",
+    "C_Cpp.clang_format_style": "file",
+    "C_Cpp.clang_format_fallbackStyle": "GNU",
+    "C_Cpp.doxygen.generatedStyle": "/**",
+    "C_Cpp.codeAnalysis.clangTidy.enabled": true,
+    "C_Cpp.codeAnalysis.clangTidy.checks.enabled": [
+        "*"
+    ],
+    "C_Cpp.codeAnalysis.clangTidy.checks.disabled": [
+        "llvmlibc-restrict-system-libc-headers",
+        "altera-id-dependent-backward-branch",
+        "hicpp-use-nullptr",
+        "modernize-use-nullptr",
+        "cppcoreguidelines-avoid-magic-numbers",
+        "readability-magic-numbers"
+    ],
+    "files.associations": {
+        "fcntl.h": "c",
+        "ptypes.h": "c",
+        "inttypes.h": "c",
+        "_uint8_t.h": "c",
+        "__bit_reference": "cpp",
+        "__node_handle": "cpp",
+        "bitset": "cpp",
+        "deque": "cpp",
+        "limits": "cpp",
+        "locale": "cpp",
+        "optional": "cpp",
+        "ratio": "cpp",
+        "tuple": "cpp",
+        "vector": "cpp",
+        "ft_token.h": "c"
+    }
+}

@@ -11,15 +11,15 @@
 /* ************************************************************************** */
 
 #include "ft_shell.h"
+#include <sys/cdefs.h>
 
 /* Structure globale de notre shell */
 t_shell g_shell;
 
-int     main(int argc, const char **argv)
+int     main(int __unused argc, const char **argv)
 {
     extern char * const * const environ;
 
-    (void) argc;
     ft_shell_init(argv[0], environ, &g_shell);
     argv = ft_shell_options(argv + 1, &g_shell);
     if (g_shell.quit == 0)

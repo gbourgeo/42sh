@@ -1,0 +1,37 @@
+CompileFlags:
+  Add:
+    # Traite tous les fichiers comme écrit en C
+    - "-xc"
+    # Headers
+    - "-I/Users/gbo/work/42sh/2024/includes"
+    - "-I/Users/gbo/work/libft/includes"
+    # Options de compilation
+    - "-Wall"
+    - "-Werror"
+    - "-Wextra"
+  # Compilateur utilisé
+  Compiler: gcc
+Index:
+  # Indexation des symboles des fichiers
+  Background: Build # Skip
+  # Indexation des librairies standart (pour notamment complétion de code)
+  StandardLibrary: Yes # No
+Diagnostics:
+  # Vérifications des includes manquants
+  MissingIncludes: Strict
+  # Vérifications des includes non utilisés
+  UnusedIncludes: Strict
+  ClangTidy:
+    Add: "*"
+    Remove:
+      - "llvmlibc-restrict-system-libc-headers"
+      - "cppcoreguidelines*"
+      - "*braces-around-statements"
+      - "readability-magic-numbers"
+    # Les vérifications qui peuvent ralentir clangd:
+    #   Strict (vérifications rapides uniquement)
+    #   Loose (vérifications rapides + celles non reconnues comme étant très lentes)
+    #   None (toutes les vérifications)
+    FastCheckFilter: Loose
+Hover:
+  ShowAKA: true

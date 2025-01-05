@@ -1,6 +1,11 @@
-echo a 2>out&&helo||helo|toutou|;&corner 2\>a
+echo a 2>1out&&helo||helo|toutou|;&corner 2\>a
 
 echo "Test commentaire 1" # Un autre commentaire
 echo "Test commentaire 2" // Un autre commentaire
 echo "Test commentaire 3" /* Un autre commentaire */; ls
 
+les quotes:"double"|'simple'&\'backslash\"et_tout_ceci_facilement. fin
+" Cette quote >' est quotée ", 'celle-là "< aussi ' et_celles_là  \', \" sont_échapées.
+
+Expansions: ${'fighs jvh "as' 2>fkjh }cool `est ce que `oui $(ca marche aussi) lol
+Expansions:${} ${} $() $(()) `` ${}$ ( ). fin
