@@ -98,10 +98,11 @@ static t_token **ft_token_end(t_token **token, size_t head, const char *command)
         }
     }
     /* Reconnaissasnce d'un mot réservé */
-    else if ()
-    {
-        return (&(*token)->next);
-    }
+    // else if ()
+    // {
+    //     return (&(*token)->next);
+    // }
+    return (&(*token)->next);
 }
 
 /**
@@ -219,13 +220,17 @@ static char can_form_an_operator(t_token **token, size_t head, const char *comma
 static int token_is_an_operator(const t_token **token)
 {
     return (token != NULL && *token != NULL
-            && ((*token)->type == OPERATOR || (*token)->type == OPERATOR_AMPERSAND
-                || (*token)->type == OPERATOR_PIPE || (*token)->type == OPERATOR_SEMICOLON
+            && ((*token)->type == OPERATOR
+                || (*token)->type == OPERATOR_AMPERSAND
+                || (*token)->type == OPERATOR_PIPE
+                || (*token)->type == OPERATOR_SEMICOLON
                 || (*token)->type == OPERATOR_INPUT_REDIRECTION
                 || (*token)->type == OPERATOR_OUTPUT_REDIRECTION
                 || (*token)->type == OPERATOR_LEFT_PARENTHESIS
-                || (*token)->type == OPERATOR_RIGHT_PARENTHESIS || (*token)->type == OPERATOR_AND
-                || (*token)->type == OPERATOR_OR || (*token)->type == OPERATOR_DUPLICATE_INPUT_REDIRECTION
+                || (*token)->type == OPERATOR_RIGHT_PARENTHESIS
+                || (*token)->type == OPERATOR_AND
+                || (*token)->type == OPERATOR_OR
+                || (*token)->type == OPERATOR_DUPLICATE_INPUT_REDIRECTION
                 || (*token)->type == OPERATOR_DUPLICATE_OUTPUT_REDIRECTION
                 || (*token)->type == OPERATOR_READ_WRITE_REDIRECTION
                 || (*token)->type == OPERATOR_APPEND_OUTPUT_REDIRECTION

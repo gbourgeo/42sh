@@ -41,7 +41,7 @@
  * @param[in] environ       Environnement à dupliquer
  * @return Nouvel environnement.
  */
-static char **ft_init_global_environ(const char *shell_name, char * const *environ)
+static char **ft_init_global_environ(const char *shell_name, const char **environ)
 {
     char **env = NULL;
     char   ptr[MAXPATHLEN];
@@ -101,7 +101,7 @@ static char **ft_init_internal_environ(const char *progname)
     return (environ);
 }
 
-void ft_shell_init(const char *progname, char * const *environ, t_shell *shell)
+void ft_shell_init(const char *progname, const char **environ, t_shell *shell)
 {
     shell->options      = 0;
     shell->quit         = 0;

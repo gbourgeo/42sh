@@ -13,27 +13,37 @@
 #include "ft_builtins.h"
 #include "ft_log.h"
 #include "libft.h"
-
+#include <stdlib.h>
 #include <sys/stat.h>
 #include <unistd.h>
 
 static int ft_cd_chdir_error(char *pwd, const char *dirname, const char *cmdname)
 {
     struct stat buffer;
-    int         ret;
+    int         ret = 0;
 
     if (pwd)
     {
         ret = stat(pwd, &buffer);
         if (ret == -1)
+        {
             if (lstat(pwd, &buffer) != -1)
+            {
                 ft_log(SH_LOG_LEVEL_WARN, "%s: too many levels of symbolic links: %s", cmdname, dirname);
+            }
             else
+            {
                 ft_log(SH_LOG_LEVEL_WARN, "%s: no such file or directory: %s", cmdname, dirname);
+            }
+        }
         else if (!S_ISDIR(buffer.st_mode))
+        {
             ft_log(SH_LOG_LEVEL_WARN, "%s: not a directory: %s", cmdname, dirname);
+        }
         else
+        {
             ft_log(SH_LOG_LEVEL_WARN, "%s: permission denied: %s", cmdname, dirname);
+        }
         free(pwd);
     }
     return (1);
@@ -41,8 +51,8 @@ static int ft_cd_chdir_error(char *pwd, const char *dirname, const char *cmdname
 
 static int cd_write_in_pwd(cd_e option, const char *dirname, const char *cmdname, t_shell *shell)
 {
-    char *pwd;
-    char *tmp;
+    char *pwd = NULL;
+    char *tmp = NULL;
 
     pwd = cd_check(dirname, cmdname, shell);
     if (chdir(pwd) != -1)
@@ -62,8 +72,8 @@ static int cd_write_in_pwd(cd_e option, const char *dirname, const char *cmdname
 
 static char *cd_change_in_pwd(const char **dirs, const char *found, const char *pwd)
 {
-    char *tmp;
-    char *tmp_2;
+    char *tmp   = NULL;
+    char *tmp_2 = NULL;
 
     tmp   = ft_strndup(pwd, ft_strlen(pwd) - ft_strlen(found));
     tmp_2 = ft_strjoin(tmp, dirs[0]);
@@ -75,8 +85,8 @@ static char *cd_change_in_pwd(const char **dirs, const char *found, const char *
 
 static int cd_search_in_pwd(const char **dirs, const char *arg_name, t_shell *shell)
 {
-    char *pwd;
-    char *tmp;
+    char *pwd = NULL;
+    char *tmp = NULL;
 
     pwd = (char *) ft_getenv("PWD", shell);
     if ((tmp = ft_strstr(pwd, dirs[0])) == NULL)
@@ -116,21 +126,33 @@ int ft_cd(const char **args, t_shell *shell)
         while (args[i][j] && !(option & CD_BREAK))
         {
             if (ft_strcmp(args[i], "--") == 0)
+            {
                 option |= CD_BREAK;
+            }
             else if (args[i][j] == 'P')
+            {
                 option = CD_RESOLVE_BEFORE;
+            }
             else if (args[i][j] == 'L')
+            {
                 option = CD_RESOLVE_AFTER;
+            }
             else
+            {
                 return (ft_cd_invalid_option(args[i][j], args[0]));
+            }
             j++;
         }
         i++;
     }
     if (!args[i] || !args[i + 1])
+    {
         return (cd_write_in_pwd(option, args[i], args[0], shell));
+    }
     if (!args[i + 2])
+    {
         return (cd_search_in_pwd(args + i, args[0], shell));
+    }
     ft_log(SH_LOG_LEVEL_WARN, "%s: too many arguments: %s", args[0], args[i + 3]);
     return (1);
 }

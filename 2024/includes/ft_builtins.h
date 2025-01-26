@@ -49,7 +49,7 @@ typedef struct __attribute__((aligned(MEDIUM_ALIGNMENT_CONSTANT))) s_env
     const char  *working_dir;
     const char **unset_env;
     const char **set_env;
-    env_e        option;
+    unsigned int option;
 } t_env;
 
 /*****************************************************************************

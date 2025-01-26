@@ -13,6 +13,7 @@
 #include "ft_builtins.h"
 #include "ft_log.h"
 #include "libft.h"
+#include <stdlib.h>
 
 static int new_env(const char **args, char **env)
 {

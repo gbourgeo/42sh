@@ -14,8 +14,8 @@
 #include "ft_shell.h"
 #include "libft.h"
 #include "libft2.h"
-
 #include <fcntl.h>
+#include <stdlib.h>
 #include <unistd.h>
 
 void ft_pipe_right(t_args *pipes, t_shell *e)

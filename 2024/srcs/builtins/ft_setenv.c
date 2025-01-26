@@ -14,6 +14,7 @@
 #include "ft_log.h"
 #include "ft_printf.h"
 #include "libft.h"
+#include <stdlib.h>
 
 /**
  * Recherche une variable d'environnement dans la table.
@@ -28,11 +29,15 @@ static int search_in_env(const char *key, char * const *env)
 
     i = 0;
     if (key == NULL || env == NULL)
+    {
         return (-1);
+    }
     while (env[i] != NULL)
     {
         if (ft_strcmp(env[i], key) == '=')
+        {
             return (i);
+        }
         i++;
     }
     return (-1);
@@ -46,7 +51,7 @@ static int search_in_env(const char *key, char * const *env)
  */
 static char *new_env_var(const char *key, const char *value)
 {
-    char *new_var;
+    char *new_var = NULL;
 
     new_var = (char *) malloc(ft_strlen(key) + ft_strlen(value) + 2);
     ft_strcpy(new_var, key);
@@ -66,13 +71,15 @@ static char *new_env_var(const char *key, const char *value)
  */
 static char **new_env(const char *key, const char *value, char **env_old)
 {
-    char **env_new;
-    int    i;
+    char **env_new = NULL;
+    int    i = 0;
 
-    i       = ft_tablen(env_old) + 2;
+    i       = ft_tablen((const char **)env_old) + 2;
     env_new = (char **) malloc(sizeof(char *) * i);
     if (env_new == NULL)
+    {
         return (NULL);
+    }
     i = 0;
     if (env_old)
     {
@@ -105,23 +112,41 @@ static char *ft_interpret_escape_char(const char *value)
         if (ivalue[i] == '\\')
         {
             if (ivalue[i + 1] == 'a')
+            {
                 ivalue[i] = '\a';
+            }
             else if (ivalue[i + 1] == 'b')
+            {
                 ivalue[i] = '\b';
+            }
             else if (ivalue[i + 1] == 't')
+            {
                 ivalue[i] = '\t';
+            }
             else if (ivalue[i + 1] == 'n')
+            {
                 ivalue[i] = '\n';
+            }
             else if (ivalue[i + 1] == 'v')
+            {
                 ivalue[i] = '\v';
+            }
             else if (ivalue[i + 1] == 'f')
+            {
                 ivalue[i] = '\f';
+            }
             else if (ivalue[i + 1] == 'r')
+            {
                 ivalue[i] = '\r';
+            }
             else if (ivalue[i + 1] == 'e')
+            {
                 ivalue[i] = '\e';
+            }
             if (ivalue[i] != '\\') // On a interprété le '\', il faut donc copier le reste de la chaine à la suite
+            {
                 ft_strcpy(ivalue + i + 1, ivalue + i + 2);
+            }
         }
         i++;
     }
@@ -143,16 +168,22 @@ char **ft_modify_env(const char *key, const char *value, char **env, char interp
 
     ivalue = (char *) value;
     if (interpret != 0)
+    {
         ivalue = ft_interpret_escape_char(value);
+    }
     if ((i = search_in_env(key, env)) >= 0)
     {
         free(env[i]);
         env[i] = new_env_var(key, ivalue);
     }
     else
+    {
         env = new_env(key, ivalue, env);
+    }
     if (interpret != 0)
+    {
         free(ivalue);
+    }
     return (env);
 }
 
@@ -185,7 +216,9 @@ static int ft_setenv_option(const char **args, int *interpret)
             return (0);
         }
         else if (ft_strcmp(args[i], "-x") == 0)
+        {
             *interpret = 1;
+        }
         else if (args[i][0] == '-')
         {
             ft_log(SH_LOG_LEVEL_WARN, "%s: bad option '%s'", args[0], args[i]);
@@ -217,7 +250,9 @@ int ft_setenv(const char **args, t_shell *shell)
 
     i = ft_setenv_option(args, &interpret);
     if (i <= 0)
+    {
         return (-i);
+    }
     while (args[i])
     {
         ptr = ft_strchr(args[i], '=');

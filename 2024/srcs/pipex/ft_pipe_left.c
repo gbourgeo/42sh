@@ -14,8 +14,8 @@
 #include "ft_shell.h"
 #include "libft.h"
 #include "libft2.h"
-
 #include <fcntl.h>
+#include <stdlib.h>
 #include <unistd.h>
 
 static void ft_pipe_more(t_shell *e)
@@ -42,9 +42,13 @@ void ft_pipe_left(t_args *pipes, t_shell *e)
     {
         ft_dup2(fd, 0);
         if (!*pipes->args)
+        {
             ft_pipe_more(e);
+        }
         else
+        {
             e->status = check_and_exec((const char **) pipes->args, e);
+        }
     }
     close(fd);
     free(path);

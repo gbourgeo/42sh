@@ -15,47 +15,50 @@
 #include "ft_log.h"
 #include "ft_printf.h"
 #include "libft.h"
-
+#include <stdlib.h>
 #include <unistd.h>
 
 static const char **ft_env_add_var_to_table(char **old_table, const char *var)
 {
-    const char **new_table;
-    int          tablen;
+    const char **new_table = NULL;
+    size_t       tablen    = 0;
 
-    tablen    = ft_tablen(old_table);
-    new_table = (const char **) malloc((tablen + 2) * sizeof(*old_table));
+    tablen    = ft_tablen((const char **)old_table);
+    new_table = (const char **) malloc((tablen + 2) * sizeof(*new_table));
     if (new_table == NULL)
+    {
         return (NULL);
+    }
     new_table[tablen + 1] = NULL;
     new_table[tablen]     = var;
     while (tablen--)
+    {
         new_table[tablen] = old_table[tablen];
-    free(old_table);
+    }
+    free((void *)old_table);
     return (new_table);
 }
 
 static char **ft_env_remove_from_env(const char *name, char **env)
 {
-    int i;
+    size_t iter = 0;
 
-    i = 0;
     if (env != NULL)
     {
-        while (env[i] != NULL)
+        while (env[iter] != NULL)
         {
-            if (ft_strcmp(env[i], name) == '=')
+            if (ft_strcmp(env[iter], name) == '=')
             {
-                free(env[i]);
-                while (env[i + 1] != NULL)
+                free(env[iter]);
+                while (env[iter + 1] != NULL)
                 {
-                    env[i] = env[i + 1];
-                    i++;
+                    env[iter] = env[iter + 1];
+                    iter++;
                 }
-                env[i] = NULL;
+                env[iter] = NULL;
                 break;
             }
-            i++;
+            iter++;
         }
     }
     return (env);
@@ -63,20 +66,19 @@ static char **ft_env_remove_from_env(const char *name, char **env)
 
 static char **ft_env_add_to_env(const char *name, char **env)
 {
-    int i;
+    size_t iter = 0;
 
-    i = 0;
     if (env != NULL)
     {
-        while (env[i] != NULL)
+        while (env[iter] != NULL)
         {
-            if (ft_strcmp(env[i], name) == '=')
+            if (ft_strcmp(env[iter], name) == '=')
             {
-                free(env[i]);
-                env[i] = ft_strdup(name);
+                free(env[iter]);
+                env[iter] = ft_strdup(name);
                 return (env);
             }
-            i++;
+            iter++;
         }
     }
     env = (char **) ft_env_add_var_to_table(env, ft_strdup(name));
@@ -98,24 +100,32 @@ static void ft_env_usage(const char *builtin_name)
 
 static int ft_env_parse_option(t_shell *e, t_env *env, const char **args, int *pos)
 {
-    int i;
-    int j;
+    size_t i = 0;
+    size_t j = 0;
 
-    env->cpy = ft_tabdup(e->global_env);
+    env->cpy = ft_tabdup((const char **)e->global_env);
     if (env->cpy == NULL)
+    {
         return (1);
+    }
     i = 1;
     while (args[i] && args[i][0] == '-')
     {
         j = 1;
         if (args[i][j] == '\0')
+        {
             env->option |= ENV_NO_ENV;
+        }
         while (args[i][j])
         {
             if (args[i][j] == 'i')
+            {
                 env->option |= ENV_NO_ENV;
+            }
             else if (args[i][j] == '0')
+            {
                 env->option |= ENV_PRINT_NO_NEWLINE;
+            }
             else if (args[i][j] == 'u')
             {
                 if (args[i][j + 1] == '\0' && args[i + 1] == NULL)
@@ -125,7 +135,9 @@ static int ft_env_parse_option(t_shell *e, t_env *env, const char **args, int *p
                     return (1);
                 }
                 if (args[i][j + 1] != '\0')
+                {
                     env->unset_env = ft_env_add_var_to_table((char **) env->unset_env, &args[i][j + 1]);
+                }
                 else
                 {
                     env->unset_env = ft_env_add_var_to_table((char **) env->unset_env, args[i + 1]);
@@ -142,7 +154,9 @@ static int ft_env_parse_option(t_shell *e, t_env *env, const char **args, int *p
                     return (1);
                 }
                 if (args[i][j + 1] != '\0')
+                {
                     env->change_dir = &args[i][j + 1];
+                }
                 else
                 {
                     env->change_dir = args[i + 1];
@@ -151,7 +165,9 @@ static int ft_env_parse_option(t_shell *e, t_env *env, const char **args, int *p
                 break;
             }
             else if (args[i][j] == 'v')
+            {
                 env->option |= ENV_VERBOSE;
+            }
             else if (args[i][j] == '-')
             {
                 if (j != 1)
@@ -161,7 +177,9 @@ static int ft_env_parse_option(t_shell *e, t_env *env, const char **args, int *p
                     return (1);
                 }
                 if (args[i][j + 1] == '\0')
+                {
                     break;
+                }
                 else if (ft_strcmp(args[i], "--help") == 0)
                 {
                     env->option |= ENV_PRINT_HELP;
@@ -237,7 +255,9 @@ int ft_env(const char **args, t_shell *shell)
     if (env.option & ENV_NO_ENV)
     {
         if (env.option & ENV_VERBOSE)
+        {
             ft_putendl("cleaning environ");
+        }
         ft_tabdel((char ***) &env.cpy);
     }
     else if (env.unset_env != NULL)
@@ -246,7 +266,9 @@ int ft_env(const char **args, t_shell *shell)
         while (env.unset_env[i] != NULL)
         {
             if (env.option & ENV_VERBOSE)
+            {
                 ft_printf("unset:     %s\n", env.unset_env[i]);
+            }
             env.cpy = ft_env_remove_from_env(env.unset_env[i], (char **) env.cpy);
             i++;
         }
@@ -257,7 +279,9 @@ int ft_env(const char **args, t_shell *shell)
         while (env.set_env[i] != NULL)
         {
             if (env.option & ENV_VERBOSE)
+            {
                 ft_printf("setenv:    %s\n", env.set_env[i]);
+            }
             env.cpy = ft_env_add_to_env(env.set_env[i], (char **) env.cpy);
             i++;
         }
@@ -266,7 +290,9 @@ int ft_env(const char **args, t_shell *shell)
     {
         env.working_dir = getcwd(NULL, 0);
         if (env.option & ENV_VERBOSE)
+        {
             ft_printf("chdir:     '%s'\n", env.change_dir);
+        }
         if (chdir(env.change_dir) != 0)
         {
             ft_log(SH_LOG_LEVEL_WARN, "%s: cannot change directory to « %s »", args[0], env.change_dir);
@@ -289,7 +315,9 @@ int ft_env(const char **args, t_shell *shell)
             }
         }
         else
-            ft_puttab(env.cpy);
+        {
+            ft_puttab((const char **)env.cpy);
+        }
     }
     else
     {

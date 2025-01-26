@@ -11,6 +11,7 @@
 /* ************************************************************************** */
 
 #include "libft.h"
+#include <stdlib.h>
 
 static char *ft_create_command(char *command)
 {
@@ -34,7 +35,7 @@ static char *ft_create_command(char *command)
             i++;
     }
     len += i;
-    return ((char *) malloc(sizeof(char) * len + 1));
+    return ((char *) malloc(sizeof(char) * (len + 1)));
 }
 
 char *ft_lexical_analysis(char *command)

@@ -83,7 +83,7 @@ int          main(int argc, const char **argv);
  * @param environ Environnement du programme
  * @param shell Structure interne du Shell
  */
-void         ft_shell_init(const char *progname, char         *const *environ,
+void         ft_shell_init(const char *progname, const char **environ,
                            t_shell *shell);
 
 /**

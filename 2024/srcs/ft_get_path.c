@@ -30,12 +30,12 @@ static char *ft_generate_path_from_table(char **table)
     return (path);
 }
 
-static int ft_remove_field_from_table(char **table, int pos, int times)
+static int ft_remove_field_from_table(char **table, size_t pos, size_t times)
 {
-    int tablen = 0;
-    int repeat = 0;
+    size_t tablen = 0;
+    size_t repeat = 0;
 
-    tablen = ft_tablen(table);
+    tablen = ft_tablen((const char **) table);
     repeat = times;
     while (repeat-- && pos >= 0)
     {
@@ -69,7 +69,7 @@ char *ft_get_path(char *pwd)
 {
     char **table = NULL;
     char  *ret   = NULL;
-    int    iter  = 0;
+    size_t iter  = 0;
 
     table = ft_strsplit(pwd, '/');
     if (table == NULL)

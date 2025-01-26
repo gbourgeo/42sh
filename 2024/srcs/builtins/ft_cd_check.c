@@ -13,20 +13,23 @@
 #include "ft_builtins.h"
 #include "ft_log.h"
 #include "libft.h"
+#include <stdlib.h>
 
 static char *cd_check_special_arg(const char *dirname, const char *cmdname, t_shell *shell)
 {
-    const char *ptr;
+    const char *ptr = NULL;
 
     if (dirname == NULL || ft_strcmp(dirname, "~") == 0)
     {
         ptr = ft_getenv("HOME", shell);
         if (ptr != NULL)
+        {
             return (ft_strjoin(ptr, dirname + 1));
+        }
         ft_log(SH_LOG_LEVEL_WARN, "%s: HOME not defined", cmdname);
         return ((char *) -1);
     }
-    else if (ft_strcmp(dirname, "-") == 0)
+    if (ft_strcmp(dirname, "-") == 0)
     {
         ptr = ft_getenv("OLDPWD", shell);
         if (ptr != NULL)
@@ -47,11 +50,15 @@ char *cd_check(const char *dirname, const char *cmdname, t_shell *shell)
 
     pwd = cd_check_special_arg(dirname, cmdname, shell);
     if (pwd == (void *) -1)
+    {
         return (NULL);
-    else if (pwd == NULL)
+    }
+    if (pwd == NULL)
     {
         if (dirname[0] == '/')
+        {
             pwd = ft_strdup(dirname);
+        }
         else
         {
             tmp = ft_strjoin(ft_getenv("PWD", shell), "/");
