@@ -10,13 +10,21 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "ft_log.h"
 #include "ft_shell.h"
+#include "ft_shell_log.h"
 #include "libft.h"
-#include "libft2.h"
 #include <fcntl.h>
 #include <stdlib.h>
 #include <unistd.h>
+
+static int ft_dup2(int oldd, int newd)
+{
+    if (newd != oldd)
+    {
+        close(newd);
+    }
+    return (dup2(oldd, newd));
+}
 
 static void ft_pipe_more(t_shell *e)
 {

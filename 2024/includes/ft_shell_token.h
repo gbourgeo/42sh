@@ -1,7 +1,7 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   ft_token.h                                         :+:      :+:    :+:   */
+/*   ft_shell_token.h                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: gbourgeo <gbourgeo@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
@@ -10,11 +10,12 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-#ifndef FT_TOKEN_H
-#define FT_TOKEN_H
+#ifndef _FT_SHELL_TOKEN_H_
+#define _FT_SHELL_TOKEN_H_
 
-#include "ft_constants.h"
+#include "ft_defines.h"
 #include <stddef.h>
+#include <stdint.h>
 
 typedef enum token_type
 {
@@ -43,35 +44,35 @@ typedef enum token_type
 } e_token_type;
 
 typedef enum char_type
-{
-    IS_A_QUOTE      = 0x01, // 2^0
-    IS_AN_EXPANSION = 0x02, // 2^1
-    IS_AN_OPERATOR  = 0x04, // 2^2
-    IS_A_COMMENT    = 0x08, // 2^3
-    IS_A_SEPARATOR  = 0x10, // 2^4
-    IS_A_DELIMITER  = 0x20, // 2^5
+{                           // Bits
+    IS_A_QUOTE      = 0x01, // 00000001
+    IS_AN_EXPANSION = 0x02, // 00000010
+    IS_AN_OPERATOR  = 0x04, // 00000100
+    IS_A_COMMENT    = 0x08, // 00001000
+    IS_A_SEPARATOR  = 0x10, // 00010000
+    IS_A_DELIMITER  = 0x20, // 00100000
 } e_char_type;
 
-#define CHARACTER_IS_A_QUOTE(value)      (((unsigned char *) &(value))[0] & (unsigned int) IS_A_QUOTE)
-#define CHARACTER_IS_AN_EXPANSION(value) (((unsigned char *) &(value))[0] & (unsigned int) IS_AN_EXPANSION)
-#define CHARACTER_IS_AN_OPERATOR(value)  (((unsigned char *) &(value))[0] & (unsigned int) IS_AN_OPERATOR)
-#define CHARACTER_IS_A_COMMENT(value)    (((unsigned char *) &(value))[0] & (unsigned int) IS_A_COMMENT)
-#define CHARACTER_IS_A_SEPARATOR(value)  (((unsigned char *) &(value))[0] & (unsigned int) IS_A_SEPARATOR)
-#define CHARACTER_IS_A_DELIMITER(value)  (((unsigned char *) &(value))[0] & (unsigned int) IS_A_DELIMITER)
-#define CHARACTER_IS_NEWLINE(value)      value == '\n'
-#define CHARACTER_IS_QUOTED(value)       (((unsigned char *) &(value))[1] != 0)
-#define QUOTE_VALUE(value)               (((unsigned char *) &(value))[1])
+#define CHARACTER_IS_A_QUOTE(value)      (((unsigned char *) (value))[0] & (unsigned int) IS_A_QUOTE)
+#define CHARACTER_IS_AN_EXPANSION(value) (((unsigned char *) (value))[0] & (unsigned int) IS_AN_EXPANSION)
+#define CHARACTER_IS_AN_OPERATOR(value)  (((unsigned char *) (value))[0] & (unsigned int) IS_AN_OPERATOR)
+#define CHARACTER_IS_A_COMMENT(value)    (((unsigned char *) (value))[0] & (unsigned int) IS_A_COMMENT)
+#define CHARACTER_IS_A_SEPARATOR(value)  (((unsigned char *) (value))[0] & (unsigned int) IS_A_SEPARATOR)
+#define CHARACTER_IS_A_DELIMITER(value)  (((unsigned char *) (value))[0] & (unsigned int) IS_A_DELIMITER)
+#define CHARACTER_IS_NEWLINE(value)      ((unsigned char) (value) == '\n')
+#define CHARACTER_IS_QUOTED(value)       (((unsigned char *) (value))[1] != 0)
+#define QUOTE_VALUE(value)               (((unsigned char *) (value))[1])
 
-typedef struct __attribute((aligned(MEDIUM_ALIGNMENT_CONSTANT))) s_token
+typedef struct _align(64) s_token
 {
-    e_token_type    type;
-    size_t          tail;
-    size_t          head;
-    struct s_token *token;
-    struct s_token *next;
+    e_token_type    type;         /* Type du token */
+    size_t          tail;         /* Debut du token */
+    size_t          head;         /* Fin du token */
+    struct s_token *nested_token; /* Liste de tokens inclus dans celui-ci (ex. expansions imbriquées) */
+    struct s_token *next;         /* Token suivant */
 } t_token;
 
-typedef struct __attribute((aligned(SOFT_ALIGNMENT_CONSTANT))) s_args
+typedef struct _align(32) s_args
 {
     int            type;
     int            pipe;
@@ -86,13 +87,16 @@ typedef struct __attribute((aligned(SOFT_ALIGNMENT_CONSTANT))) s_args
  * @param ifs Chaîne de caractère(s) de séparation de mots
  * @return Liste de token.
  */
-size_t      ft_token_recognition(t_token **token, const char *command, const char *end_of_input, const char *ifs);
+size_t ft_token_recognition(t_token      **token,
+                            const uint8_t *command,
+                            const uint8_t *end_of_input,
+                            const uint8_t *ifs);
 
 /**
  * @brief Désalloue une liste de token.
  * @param token_list Liste de token
  */
-void        ft_free_token_list(t_token *token_list);
+void ft_free_token_list(t_token *token_list);
 
 /**
  * @brief Retourne le type de token en chaîne de caractères.
@@ -101,4 +105,4 @@ void        ft_free_token_list(t_token *token_list);
  */
 const char *ft_token_type_to_str(e_token_type type);
 
-#endif /* FT_TOKEN_H */
+#endif /* _FT_SHELL_TOKEN_H_ */

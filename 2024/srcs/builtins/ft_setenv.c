@@ -10,10 +10,12 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "ft_builtins.h"
-#include "ft_log.h"
 #include "ft_printf.h"
+#include "ft_shell.h"
+#include "ft_shell_builtins.h"
+#include "ft_shell_log.h"
 #include "libft.h"
+#include <stddef.h>
 #include <stdlib.h>
 
 /**
@@ -23,22 +25,21 @@
  * @return La position dans la table de la variable d'environnement,
  * -1 si elle n'a pas été trouvée.
  */
-static int search_in_env(const char *key, char * const *env)
+static ssize_t search_in_env(const char *key, char * const *env)
 {
-    int i;
+    ssize_t iter = 0;
 
-    i = 0;
     if (key == NULL || env == NULL)
     {
         return (-1);
     }
-    while (env[i] != NULL)
+    while (env[iter] != NULL)
     {
-        if (ft_strcmp(env[i], key) == '=')
+        if (ft_strcmp(env[iter], key) == '=')
         {
-            return (i);
+            return (iter);
         }
-        i++;
+        iter++;
     }
     return (-1);
 }
@@ -71,27 +72,25 @@ static char *new_env_var(const char *key, const char *value)
  */
 static char **new_env(const char *key, const char *value, char **env_old)
 {
-    char **env_new = NULL;
-    int    i = 0;
+    size_t len     = ft_tablen((const char **) env_old) + 2;
+    char **env_new = (char **) malloc(sizeof(char *) * len);
 
-    i       = ft_tablen((const char **)env_old) + 2;
-    env_new = (char **) malloc(sizeof(char *) * i);
     if (env_new == NULL)
     {
         return (NULL);
     }
-    i = 0;
-    if (env_old)
+    len = 0;
+    if (env_old != NULL)
     {
-        while (env_old[i])
+        while (env_old[len])
         {
-            env_new[i] = env_old[i];
-            i++;
+            env_new[len] = env_old[len];
+            len++;
         }
-        free(env_old);
+        free((void *) env_old);
     }
-    env_new[i]     = new_env_var(key, value);
-    env_new[i + 1] = NULL;
+    env_new[len]     = new_env_var(key, value);
+    env_new[len + 1] = NULL;
     return (env_new);
 }
 
@@ -105,50 +104,50 @@ static char **new_env(const char *key, const char *value, char **env_old)
 static char *ft_interpret_escape_char(const char *value)
 {
     char  *ivalue = ft_strdup(value);
-    size_t i      = 0;
+    size_t iter   = 0;
 
-    while (ivalue[i] != '\0')
+    while (ivalue[iter] != '\0')
     {
-        if (ivalue[i] == '\\')
+        if (ivalue[iter] == '\\')
         {
-            if (ivalue[i + 1] == 'a')
+            if (ivalue[iter + 1] == 'a')
             {
-                ivalue[i] = '\a';
+                ivalue[iter] = '\a';
             }
-            else if (ivalue[i + 1] == 'b')
+            else if (ivalue[iter + 1] == 'b')
             {
-                ivalue[i] = '\b';
+                ivalue[iter] = '\b';
             }
-            else if (ivalue[i + 1] == 't')
+            else if (ivalue[iter + 1] == 't')
             {
-                ivalue[i] = '\t';
+                ivalue[iter] = '\t';
             }
-            else if (ivalue[i + 1] == 'n')
+            else if (ivalue[iter + 1] == 'n')
             {
-                ivalue[i] = '\n';
+                ivalue[iter] = '\n';
             }
-            else if (ivalue[i + 1] == 'v')
+            else if (ivalue[iter + 1] == 'v')
             {
-                ivalue[i] = '\v';
+                ivalue[iter] = '\v';
             }
-            else if (ivalue[i + 1] == 'f')
+            else if (ivalue[iter + 1] == 'f')
             {
-                ivalue[i] = '\f';
+                ivalue[iter] = '\f';
             }
-            else if (ivalue[i + 1] == 'r')
+            else if (ivalue[iter + 1] == 'r')
             {
-                ivalue[i] = '\r';
+                ivalue[iter] = '\r';
             }
-            else if (ivalue[i + 1] == 'e')
+            else if (ivalue[iter + 1] == 'e')
             {
-                ivalue[i] = '\e';
+                ivalue[iter] = '\033';
             }
-            if (ivalue[i] != '\\') // On a interprété le '\', il faut donc copier le reste de la chaine à la suite
+            if (ivalue[iter] != '\\') // On a interprété le '\', il faut donc copier le reste de la chaine à la suite
             {
-                ft_strcpy(ivalue + i + 1, ivalue + i + 2);
+                ft_strcpy(ivalue + iter + 1, ivalue + iter + 2);
             }
         }
-        i++;
+        iter++;
     }
     return (ivalue);
 }
@@ -163,18 +162,18 @@ static char *ft_interpret_escape_char(const char *value)
  */
 char **ft_modify_env(const char *key, const char *value, char **env, char interpret)
 {
-    char *ivalue;
-    int   i;
+    char   *ivalue = (char *) value;
+    ssize_t pos    = 0;
 
-    ivalue = (char *) value;
     if (interpret != 0)
     {
         ivalue = ft_interpret_escape_char(value);
     }
-    if ((i = search_in_env(key, env)) >= 0)
+    pos = search_in_env(key, env);
+    if (pos >= 0)
     {
-        free(env[i]);
-        env[i] = new_env_var(key, ivalue);
+        free(env[pos]);
+        env[pos] = new_env_var(key, ivalue);
     }
     else
     {
@@ -191,47 +190,44 @@ char **ft_modify_env(const char *key, const char *value, char **env, char interp
  * Recherche les options du builtin et affiche l'usage si demandé.
  * @param[in] args          Liste des arguments
  * @param[out] interpret    Pointeur sur les options supportés
- * @param[in] shell         Contexte du shell
  * @return La position du premier argument qui n'est pas une option,
  * 0 si l'affichage de l'usage est demandé,
  * -1 sur une mauvaise option ou si pas d'argument donné.
  */
-static int ft_setenv_option(const char **args, int *interpret)
+static ssize_t ft_setenv_option(const char **args, char *interpret)
 {
-    size_t i = 1;
+    ssize_t iter = 1;
 
-    while (args[i] && args[i][0] == '-')
+    while (args[iter] && args[iter][0] == '-')
     {
-        if (ft_strcmp(args[i], "-h") == 0 || ft_strcmp(args[i], "--help") == 0)
+        if (ft_strcmp(args[iter], "-h") == 0 || ft_strcmp(args[iter], "--help") == 0)
         {
-            ft_printf("Usage: %s [OPTION]... [NAME=VALUE]... [[NAME] [VALUE]...]\n"
-                      "\n"
+            ft_printf("Usage: %s [OPTION]... [NAME=VALUE]... [[NAME] [VALUE]...]\n\n"
                       "Options:\n"
                       "  -x    Interpret escape characters from VALUE,"
-                      " like '\\n', '\\t', '\\e', etc.\n"
-                      "\n"
+                      " like '\\n', '\\t', '\\e', etc.\n\n"
                       "Single arguments must have the '=' sign to form the combination \"NAME=VALUE\",\n"
                       "on the other hand, arguments can be separated with a space, like \"NAME VALUE\".\n",
                       args[0]);
             return (0);
         }
-        else if (ft_strcmp(args[i], "-x") == 0)
+        if (ft_strcmp(args[iter], "-x") == 0)
         {
             *interpret = 1;
         }
-        else if (args[i][0] == '-')
+        else if (args[iter][0] == '-')
         {
-            ft_log(SH_LOG_LEVEL_WARN, "%s: bad option '%s'", args[0], args[i]);
+            ft_log(SH_LOG_LEVEL_WARN, "%s: bad option '%s'", args[0], args[iter]);
             return (-1);
         }
-        i++;
+        iter++;
     }
-    if (args[i] == NULL)
+    if (args[iter] == NULL)
     {
         ft_log(SH_LOG_LEVEL_WARN, "%s: bad assignment", args[0]);
         return (-1);
     }
-    return (i);
+    return (iter);
 }
 
 /**
@@ -244,35 +240,34 @@ static int ft_setenv_option(const char **args, int *interpret)
  */
 int ft_setenv(const char **args, t_shell *shell)
 {
-    char *ptr       = NULL;
-    int   interpret = 0;
-    int   i;
+    char   *ptr       = NULL;
+    char    interpret = 0;
+    ssize_t iter      = ft_setenv_option(args, &interpret);
 
-    i = ft_setenv_option(args, &interpret);
-    if (i <= 0)
+    if (iter <= 0)
     {
-        return (-i);
+        return (int) (-iter);
     }
-    while (args[i])
+    while (args[iter])
     {
-        ptr = ft_strchr(args[i], '=');
+        ptr = ft_strchr(args[iter], '=');
         if (ptr != NULL)
         {
             *ptr              = '\0';
-            shell->global_env = ft_modify_env(args[i], ptr + 1, shell->global_env, interpret);
+            shell->global_env = ft_modify_env(args[iter], ptr + 1, shell->global_env, interpret);
             *ptr              = '=';
         }
-        else if (args[i + 1] != NULL)
+        else if (args[iter + 1] != NULL)
         {
-            shell->global_env = ft_modify_env(args[i], args[i + 1], shell->global_env, interpret);
-            i++;
+            shell->global_env = ft_modify_env(args[iter], args[iter + 1], shell->global_env, interpret);
+            iter++;
         }
         else
         {
-            ft_log(SH_LOG_LEVEL_WARN, "%s: missing value: '%s'", args[0], args[i]);
+            ft_log(SH_LOG_LEVEL_WARN, "%s: missing value: '%s'", args[0], args[iter]);
             return (1);
         }
-        i++;
+        iter++;
     }
     return (0);
 }

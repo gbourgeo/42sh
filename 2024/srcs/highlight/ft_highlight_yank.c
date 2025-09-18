@@ -10,49 +10,59 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "ft_highlight.h"
+#include "ft_defines.h"
 #include "ft_shell.h"
-#include "ft_termios.h"
+#include "ft_shell_command.h"
+#include "ft_shell_termkeys.h"
 #include "libft.h"
+#include <stdint.h>
 #include <stdlib.h>
 
 void ft_highlight_yank(t_shell *shell)
 {
-    t_htext *text = NULL;
-    char    *yank = NULL;
-    size_t   len  = 0;
-    int      col  = 0;
-    int      line = 0;
+    t_higharea *harea = NULL;
+    uint8_t    *yank  = NULL;
+    size_t      len   = 0;
 
-    ft_highlight_sort_area(shell->highlighted.texts);
-    ft_freestr(&shell->highlighted.yank);
-    while (shell->highlighted.texts)
+    if (harea == NULL)
     {
-        text = shell->highlighted.texts;
-        len  = ft_strlen(shell->highlighted.yank) + (text->head - text->tail) + 2;
-        yank = (char *) malloc(len);
-        ft_strcpy(yank, shell->highlighted.yank);
-        ft_strcat(yank, " ");
-        ft_strncat(yank, shell->command.buffer + text->tail, text->head - text->tail);
-        yank[len - 1] = '\0';
-        ft_freestr(&shell->highlighted.yank);
-        shell->highlighted.yank  = yank;
-        shell->highlighted.texts = ft_highlight_remove_area(shell->highlighted.texts);
+        return;
     }
-    shell->highlighted.on = 0;
-
-    /* On se déplace au début de la commande */
-    col = (int) (shell->terminal.current_column - (shell->command.pos % shell->terminal.max_column));
-    if (col < 0)
+    /* Réorganisation des zones */
+    shell->command->harea = ft_highlight_sort_area(shell->command->harea);
+    harea                 = shell->command->harea;
+    /* Suppression de l'ancienne copie */
+    ft_freestr((char **) &shell->yank);
+    /* Calcul de la nouvelle taille de la copie */
+    while (harea != NULL)
     {
-        col = shell->terminal.max_column + col + 1;
+        len += (harea->head - harea->tail) + (len != 0);
+        harea = harea->next;
     }
-    line = (int) (shell->terminal.current_line - ((shell->command.pos + shell->prompt.len) / (shell->terminal.max_column + 1)));
-    ft_term_move_cursor(&shell->terminal, col, line);
-    ft_term_clear_modes(&shell->terminal); /* Désactive tous les modes actifs */
-    // ft_term_clear_line_and_under(&shell->terminal); /* Efface depuis le curseur jusqu'à la fin du terminal */
-    ft_putstr(shell->command.buffer);
-
-    /* On se replace à la position de base */
-    ft_term_move_cursor(&shell->terminal, shell->terminal.current_column, shell->terminal.current_line);
+    /* Création de la copie */
+    yank    = (uint8_t *) malloc(len);
+    yank[0] = '\0';
+    harea   = shell->command->harea;
+    len     = 0;
+    while (harea != NULL)
+    {
+        if (yank[0] != '\0')
+        {
+            yank[len] = ' ';
+            len++;
+        }
+        ft_memcpy(yank + len, shell->command->buffer + harea->tail, harea->head - harea->tail);
+        len += harea->head - harea->tail;
+        harea = harea->next;
+    }
+    yank[len]   = '\0';
+    shell->yank = yank;
+    /* Désactive le mode de surlignage */
+    REMOVE_BIT(shell->command->option, COMMAND_HIGHLIGHT_MODE);
+    /* Suppression des zones surlignées */
+    shell->command->harea = ft_highlight_remove_all(shell->command->harea);
+    /* Réécriture de la ligne de commande sans surlignage */
+    ft_shell_command_print(shell->command,
+                           &shell->terminal,
+                           UINT32(COMMAND_PRINT_FROM_START));
 }

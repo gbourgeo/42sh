@@ -10,30 +10,33 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "ft_command.h"
-#include "ft_highlight.h"
-#include "ft_history.h"
 #include "ft_shell.h"
-#include "ft_termios.h"
+#include "ft_shell_command.h"
+#include "ft_shell_history.h"
+#include "ft_shell_prompt.h"
+#include "ft_shell_terminal.h"
 #include "libft.h"
+#include <signal.h>
+#include <stdlib.h>
 
 void ft_shell_exit(t_shell *shell)
 {
-    int i;
+    int iter = 1;
 
-    i = 1;
-    ft_clear_shell_terminal(&shell->terminal, shell->options & SHELL_TERMATTR_LOADED);
-    ft_freestr((char **) &shell->bin_path);
-    ft_freetab((char ***) &shell->global_env);
-    ft_freetab((char ***) &shell->internal_env);
-    ft_command_clear(&shell->command);
-    ft_history_remove_all(shell->history);
-    ft_highlight_remove_all(&shell->highlighted.texts);
-    ft_freestr(&shell->highlighted.yank);
-    while (i < NSIG)
+    ft_shell_terminal_clear(&shell->terminal, shell->options);
+    ft_shell_prompt_clear(&shell->prompt);
+    ft_shell_history_save_to_file(&shell->history, shell->command);
+    ft_shell_command_delete_list(shell->command);
+    free(shell->yank);
+    free((void *) shell->bin_path);
+    ft_freetab(&shell->global_env);
+    ft_freetab(&shell->internal_env);
+    while (iter < NSIG)
     {
-        if (shell->sigs[i - 1] != SIG_ERR)
-            signal(i, shell->sigs[i - 1]);
-        i++;
+        if (shell->sigs[iter - 1] != SIG_ERR)
+        {
+            (void) signal(iter, shell->sigs[iter - 1]);
+        }
+        iter++;
     }
 }

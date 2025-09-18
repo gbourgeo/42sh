@@ -10,7 +10,9 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "ft_builtins.h"
+#include "ft_shell.h"
+#include "ft_shell_builtins.h"
+#include <stddef.h>
 
 void cd_change_pwds(const char *pwd, t_shell *shell)
 {

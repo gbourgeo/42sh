@@ -10,9 +10,10 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "ft_token.h"
+#include "ft_defines.h"
+#include "ft_shell_token.h"
 #include "libft.h"
-#include <stdio.h> //enlever
+#include <stdint.h>
 #include <stdlib.h>
 
 /**
@@ -42,7 +43,7 @@ static t_token *ft_token_new(e_token_type type, size_t pos)
  * @param command Commande
  * @return Pointeur sur le token suivant.
  */
-static t_token **ft_token_end(t_token **token, size_t head, const char *command)
+static t_token **ft_token_end(t_token **token, size_t head, const uint8_t *command)
 {
     size_t iter = 0;
 
@@ -112,7 +113,7 @@ static t_token **ft_token_end(t_token **token, size_t head, const char *command)
  * @param ifs Tableau des séparateurs
  * @return Le type de caractère.
  */
-static unsigned char is_special(const char *command, size_t pos, const char *ifs)
+static unsigned char is_special(const uint8_t *command, size_t pos, const uint8_t *ifs)
 {
     if (command[pos] == '\\' || command[pos] == '"' || command[pos] == '\'')
     {
@@ -158,7 +159,7 @@ static unsigned char is_special(const char *command, size_t pos, const char *ifs
  * @param command Comman`de
  * @return 0 ne peut pas être ajouté, 1 autrement.
  */
-static char can_form_an_operator(t_token **token, size_t head, const char *command)
+static char can_form_an_operator(t_token **token, size_t head, const uint8_t *command)
 {
     size_t pos = 0;
     size_t len = 0;
@@ -169,42 +170,42 @@ static char can_form_an_operator(t_token **token, size_t head, const char *comma
     }
     pos = (*token)->tail;
     len = head - pos + 1;
-    if (ft_strncmp(&command[pos], "&&", len) == 0)
+    if (ft_memcmp(&command[pos], "&&", len) == 0)
     {
         (*token)->type = OPERATOR_AND;
         return (1);
     }
-    if (ft_strncmp(&command[pos], "||", len) == 0)
+    if (ft_memcmp(&command[pos], "||", len) == 0)
     {
         (*token)->type = OPERATOR_OR;
         return (1);
     }
-    if (ft_strncmp(&command[pos], "<&", len) == 0)
+    if (ft_memcmp(&command[pos], "<&", len) == 0)
     {
         (*token)->type = OPERATOR_DUPLICATE_INPUT_REDIRECTION;
         return (1);
     }
-    if (ft_strncmp(&command[pos], "<>", len) == 0)
+    if (ft_memcmp(&command[pos], "<>", len) == 0)
     {
         (*token)->type = OPERATOR_READ_WRITE_REDIRECTION;
         return (1);
     }
-    if (ft_strncmp(&command[pos], ">&", len) == 0)
+    if (ft_memcmp(&command[pos], ">&", len) == 0)
     {
         (*token)->type = OPERATOR_DUPLICATE_OUTPUT_REDIRECTION;
         return (1);
     }
-    if (ft_strncmp(&command[pos], ">|", len) == 0)
+    if (ft_memcmp(&command[pos], ">|", len) == 0)
     {
         (*token)->type = OPERATOR_OUTPUT_REDIRECTION;
         return (1);
     }
-    if (ft_strncmp(&command[pos], ">>", len) == 0)
+    if (ft_memcmp(&command[pos], ">>", len) == 0)
     {
         (*token)->type = OPERATOR_APPEND_OUTPUT_REDIRECTION;
         return (1);
     }
-    if (ft_strncmp(&command[pos], "<<-", len) == 0) // Permet de valider "<<" et "<<-"
+    if (ft_memcmp(&command[pos], "<<-", len) == 0) // Permet de valider "<<" et "<<-"
     {
         (*token)->type = HERE_DOCUMENT;
         return (1);
@@ -242,7 +243,10 @@ static int token_is_a_newline(const t_token **token)
     return (token != NULL && *token != NULL && (*token)->type == NEWLINE);
 }
 
-static size_t can_form_an_expansion(t_token **token, size_t head, const char *command, const char *ifs)
+static size_t can_form_an_expansion(t_token      **token,
+                                    size_t         head,
+                                    const uint8_t *command,
+                                    const uint8_t *ifs)
 {
     if (*token == NULL)                         // Si le token courant est NULL...
     {
@@ -252,46 +256,61 @@ static size_t can_form_an_expansion(t_token **token, size_t head, const char *co
     {
         (*token)->type = EXPANSION;
     }
-    if (command[head] == '`') // Backquotes : Command Substitution
-    {
-        head += ft_token_recognition(&(*token)->token, command + head + 1, "`", ifs);
-    }
     if (command[head] == '$')
     {
         if (command[head + 1] == '{') // ${ : Parameter Expansion
         {
-            head += ft_token_recognition(&(*token)->token, command + head + 2, "}", ifs);
+            head += ft_token_recognition(&(*token)->nested_token,
+                                         command + head + 2,
+                                         (uint8_t *) "}",
+                                         ifs)
+                + 1;
         }
         else if (command[head + 1] == '(')
         {
             if (command[head + 2] == '(') // $(( : Arithmetic Expansion
             {
-                head += ft_token_recognition(&(*token)->token, command + head + 3, "))", ifs);
+                head += ft_token_recognition(&(*token)->nested_token,
+                                             command + head + 3,
+                                             (uint8_t *) "))",
+                                             ifs)
+                    + 2;
             }
             else // $( : Command Substitution
             {
-                head += ft_token_recognition(&(*token)->token, command + head + 2, ")", ifs);
+                head += ft_token_recognition(&(*token)->nested_token,
+                                             command + head + 2,
+                                             (uint8_t *) ")",
+                                             ifs)
+                    + 1;
             }
         }
     }
-    (*token)->head = head;
+    else if (command[head] == '`') // Backquotes : Command Substitution
+    {
+        head += ft_token_recognition(&(*token)->nested_token,
+                                     command + head + 1,
+                                     (uint8_t *) "`",
+                                     ifs);
+    }
+    // (*token)->head = head;
     return (head);
 }
 
-static int is_end_of_input(const char *start, const char *end_of_input)
+static int is_end_of_input(const uint8_t *start, const uint8_t *end_of_input)
 {
     if (end_of_input == NULL || end_of_input[0] == '\0')
     {
         return (0);
     }
-    return (ft_strncmp(start, end_of_input, ft_strlen(end_of_input)) == 0);
+    return (ft_memcmp(start, end_of_input, ft_ustrlen(end_of_input)) == 0);
 }
 
-size_t ft_token_recognition(t_token **token, const char *command, const char *end_of_input, const char *ifs)
+size_t ft_token_recognition(t_token **token, const uint8_t *command, const uint8_t *end_of_input, const uint8_t *ifs)
 {
-    t_token      **current_token = token;
-    size_t         iter          = 0;
-    unsigned short character     = 0;
+    t_token     **current_token = token;
+    size_t        iter          = 0;
+    unsigned char character[2]  = { 0 };
 
     /**
      * "character" fonctionne comme ceci:
@@ -305,14 +324,14 @@ size_t ft_token_recognition(t_token **token, const char *command, const char *en
 
     while (command[iter] != '\0')
     {
-        ((unsigned char *) &character)[0] &= ~0xff; // Remet les 8 premiers bits à 0.
-        ((unsigned char *) &character)[0] |= is_special(command, iter, ifs);
+        CLEAR_BIT(character[0]);
+        character[0] |= is_special(command, iter, ifs);
 
         if (is_end_of_input(command + iter, end_of_input)) // Caractères de fin ...
         {
             if (!CHARACTER_IS_QUOTED(character))           // ET qu'ils ne sont pas quotés ...
             {
-                iter += ft_strlen(end_of_input);           // Incrément de l'itérateur
+                iter += ft_ustrlen(end_of_input);          // Incrément de l'itérateur
                 break;                                     // Fin !
             }
         }
@@ -330,8 +349,8 @@ size_t ft_token_recognition(t_token **token, const char *command, const char *en
         {
             if (!CHARACTER_IS_QUOTED(character))                                 // ET qu'il n'est pas quoté ...
             {
-                QUOTE_VALUE(character) = command[iter];                          // Sauvegarde du caractère de quote.
-                if (*current_token == NULL)                                      // Si le nouveau token est NULL ...
+                QUOTE_VALUE(character) = (unsigned char) command[iter];          // Sauvegarde du caractère de quote.
+                if (current_token == NULL || *current_token == NULL)             // Si le nouveau token est NULL ...
                 {
                     current_token  = ft_token_end(current_token, iter, command); // Fin de token !
                     *current_token = ft_token_new(TOKEN, iter);                  // Création d'un nouveau token !
@@ -378,21 +397,29 @@ size_t ft_token_recognition(t_token **token, const char *command, const char *en
         {
             if (!CHARACTER_IS_QUOTED(character))                            // ET qu'il n'est pas quoté...
             {
-                current_token = ft_token_end(current_token, iter, command); // Fin du token !
-                if (command[iter] == '#' || ft_strncmp(command + iter, "//", 2) == 0)
+                current_token = ft_token_end(current_token, iter, command); // Fin du token précédent !
+                if (command[iter] == '#' || ft_memcmp(command + iter, "//", 2) == 0)
                 {
-                    while (command[iter + 1] != '\0' && command[iter + 1] != '\n') // Déplacement jusqu'à la fin de la ligne.
+                    while (command[iter] != '\0'
+                           && command[iter] != '\n') // Déplacement jusqu'à la fin de la ligne.
                     {
                         iter++;
                     }
+                    continue;
                 }
-                else if (ft_strncmp(command + iter, "/*", 2) == 0)
+                if (ft_memcmp(command + iter, "/*", 2) == 0)
                 {
-                    while (ft_strncmp(command + iter, "*/", 2) != 0) // Déplacement jusqu'à la fin des caractères fermants du commentaire.
+                    iter += 2;
+                    while (command[iter] != '\0'
+                           && ft_memcmp(command + iter, "*/", 2) != 0) // Déplacement jusqu'à la fin des caractères fermants du commentaire.
                     {
                         iter++;
                     }
-                    iter++;
+                    if (command[iter] != '\0')
+                    {
+                        iter += 2;
+                    }
+                    continue;
                 }
             }
         }
@@ -415,91 +442,60 @@ size_t ft_token_recognition(t_token **token, const char *command, const char *en
 
 void ft_free_token_list(t_token *token)
 {
-    if (token == NULL)
+    t_token *next = NULL;
+
+    while (token != NULL)
     {
-        return;
+        next = token->next;
+        ft_free_token_list(token->nested_token);
+        free(token);
+        token = next;
     }
-    ft_free_token_list(token->next);
-    free(token);
 }
 
 const char *ft_token_type_to_str(e_token_type type)
 {
-    if (type == TOKEN)
+    switch (type)
     {
-        return "TOKEN";
+        case TOKEN:
+            return "TOKEN";
+        case OPERATOR:
+            return "OPERATOR";
+        case NEWLINE:
+            return "NEWLINE";
+        case EXPANSION:
+            return "EXPANSION";
+        case WORD:
+            return "WORD";
+        case OPERATOR_AMPERSAND:
+            return "OPERATOR_AMPERSAND";
+        case OPERATOR_PIPE:
+            return "OPERATOR_PIPE";
+        case OPERATOR_SEMICOLON:
+            return "OPERATOR_SEMICOLON";
+        case OPERATOR_INPUT_REDIRECTION:
+            return "OPERATOR_INPUT_REDIRECTION";
+        case OPERATOR_OUTPUT_REDIRECTION:
+            return "OPERATOR_OUTPUT_REDIRECTION";
+        case OPERATOR_LEFT_PARENTHESIS:
+            return "OPERATOR_LEFT_PARENTHESIS";
+        case OPERATOR_RIGHT_PARENTHESIS:
+            return "OPERATOR_RIGHT_PARENTHESIS";
+        case OPERATOR_AND:
+            return "OPERATOR_AND";
+        case OPERATOR_OR:
+            return "OPERATOR_OR";
+        case OPERATOR_DUPLICATE_INPUT_REDIRECTION:
+            return "OPERATOR_DUPLICATE_INPUT_REDIRECTION";
+        case OPERATOR_DUPLICATE_OUTPUT_REDIRECTION:
+            return "OPERATOR_DUPLICATE_OUTPUT_REDIRECTION";
+        case OPERATOR_READ_WRITE_REDIRECTION:
+            return "OPERATOR_READ_WRITE_REDIRECTION";
+        case OPERATOR_APPEND_OUTPUT_REDIRECTION:
+            return "OPERATOR_APPEND_OUTPUT_REDIRECTION";
+        case HERE_DOCUMENT:
+            return "HERE_DOCUMENT";
+        case IO_NUMBER:
+            return "IO_NUMBER";
     }
-    if (type == OPERATOR)
-    {
-        return "OPERATOR";
-    }
-    if (type == NEWLINE)
-    {
-        return "NEWLINE";
-    }
-    if (type == EXPANSION)
-    {
-        return "EXPANSION";
-    }
-    if (type == OPERATOR_AMPERSAND)
-    {
-        return "OPERATOR_AMPERSAND";
-    }
-    if (type == OPERATOR_PIPE)
-    {
-        return "OPERATOR_PIPE";
-    }
-    if (type == OPERATOR_SEMICOLON)
-    {
-        return "OPERATOR_SEMICOLON";
-    }
-    if (type == OPERATOR_INPUT_REDIRECTION)
-    {
-        return "OPERATOR_INPUT_REDIRECTION";
-    }
-    if (type == OPERATOR_OUTPUT_REDIRECTION)
-    {
-        return "OPERATOR_OUTPUT_REDIRECTION";
-    }
-    if (type == OPERATOR_LEFT_PARENTHESIS)
-    {
-        return "OPERATOR_LEFT_PARENTHESIS";
-    }
-    if (type == OPERATOR_RIGHT_PARENTHESIS)
-    {
-        return "OPERATOR_RIGHT_PARENTHESIS";
-    }
-    if (type == OPERATOR_AND)
-    {
-        return "OPERATOR_AND";
-    }
-    if (type == OPERATOR_OR)
-    {
-        return "OPERATOR_OR";
-    }
-    if (type == OPERATOR_DUPLICATE_INPUT_REDIRECTION)
-    {
-        return "OPERATOR_DUPLICATE_INPUT_REDIRECTION";
-    }
-    if (type == OPERATOR_DUPLICATE_OUTPUT_REDIRECTION)
-    {
-        return "OPERATOR_DUPLICATE_OUTPUT_REDIRECTION";
-    }
-    if (type == OPERATOR_READ_WRITE_REDIRECTION)
-    {
-        return "OPERATOR_READ_WRITE_REDIRECTION";
-    }
-    if (type == OPERATOR_APPEND_OUTPUT_REDIRECTION)
-    {
-        return "OPERATOR_APPEND_OUTPUT_REDIRECTION";
-    }
-    if (type == HERE_DOCUMENT)
-    {
-        return "HERE_DOCUMENT";
-    }
-    if (type == IO_NUMBER)
-    {
-        return "IO_NUMBER";
-    }
-    return "UNKNOWN";
 }

@@ -1,7 +1,7 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   ft_termios_functions.c                             :+:      :+:    :+:   */
+/*   ft_shell_terminal.c                                :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: gbourgeo <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
@@ -10,10 +10,14 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "ft_builtins.h"
-#include "ft_log.h"
-#include "ft_termios.h"
+#include "ft_defines.h"
+#include "ft_shell_builtins.h"
+#include "ft_shell_constants.h"
+#include "ft_shell_log.h"
+#include "ft_shell_terminal.h"
 #include "libft.h"
+#include <stddef.h>
+#include <stdint.h>
 #include <sys/fcntl.h>
 #include <sys/ioctl.h>
 #include <sys/ttycom.h>
@@ -21,22 +25,18 @@
 #include <termios.h>
 #include <unistd.h>
 
-void ft_init_shell_terminal(t_term *terminal)
+void ft_shell_terminal_init(t_term *terminal)
 {
-    terminal->fd      = STDIN_FILENO;
-    terminal->desc[0] = '\0';
-    ft_get_terminal_size(terminal);
-    terminal->current_column = 0;
-    terminal->current_line   = 0;
-    terminal->start_column   = 0;
-    terminal->start_line     = 0;
+    ft_memset(terminal, 0, sizeof(*terminal));
+    terminal->fd = STDIN_FILENO;
+    ft_shell_terminal_get_size(terminal);
 }
 
-void ft_clear_shell_terminal(t_term *terminal, uint8_t restore_attr)
+void ft_shell_terminal_clear(t_term *terminal, uint32_t options)
 {
-    if (restore_attr != 0)
+    if (TEST_BIT(options, SHELL_TERMATTR_LOADED))
     {
-        ft_restore_terminal_attributes(terminal);
+        ft_shell_terminal_restore_attributes(terminal);
     }
     if (terminal->fd > 0)
     {
@@ -44,18 +44,20 @@ void ft_clear_shell_terminal(t_term *terminal, uint8_t restore_attr)
     }
 }
 
-void ft_get_terminal_size(t_term *terminal)
+void ft_shell_terminal_get_size(t_term *terminal)
 {
     struct winsize winsize;
 
     ioctl(STDOUT_FILENO, TIOCGWINSZ, &winsize);
-    terminal->max_column = winsize.ws_col - 1;
+    terminal->max_column = winsize.ws_col;
     terminal->max_line   = winsize.ws_row - 1;
 }
 
-void ft_get_cursor_position(t_term *terminal)
+void ft_shell_terminal_get_cursor_position(t_term *terminal, uint32_t options)
 {
     char buff[16] = { 0 };
+    int  line     = 0;
+    int  column   = 0;
 
     write(STDOUT_FILENO, "\033[6n", 4);
     read(STDOUT_FILENO, buff, sizeof(buff));
@@ -63,17 +65,63 @@ void ft_get_cursor_position(t_term *terminal)
     {
         return;
     }
-    terminal->current_line   = ft_atoi(buff + 2) - 1;
-    terminal->current_column = ft_atoi(ft_strchr(buff + 2, ';') + 1) - 1;
-    terminal->start_line     = terminal->current_line;
-    terminal->start_column   = terminal->current_column;
+    line   = ft_atoi(buff + 2) - 1;
+    column = ft_atoi(ft_strchr(buff + 2, ';') + 1) - 1;
+    if (TEST_BIT(options, MOVE_CURSOR_START))
+    {
+        terminal->start.line   = line;
+        terminal->start.column = column;
+    }
+    if (TEST_BIT(options, MOVE_CURSOR_CURRENT))
+    {
+        terminal->current.line   = line;
+        terminal->current.column = column;
+    }
+    if (TEST_BIT(options, MOVE_CURSOR_END))
+    {
+        terminal->end.line   = line;
+        terminal->end.column = column;
+    }
+}
+
+void ft_shell_terminal_calc_current_command_position(t_term *terminal,
+                                                     size_t  command_pos)
+{
+    size_t column = (size_t) terminal->start.column + command_pos;
+    size_t line   = column / (size_t) terminal->max_column;
+
+    terminal->current.column = (int) column % terminal->max_column;
+    terminal->current.line   = terminal->start.line + (int) line;
+
+    if (terminal->current.line > terminal->max_line)
+    {
+        terminal->start.line -= (terminal->current.line - terminal->max_line);
+        terminal->current.line = terminal->max_line;
+    }
+}
+
+void ft_shell_terminal_calc_end_command_position(t_term *terminal,
+                                                 size_t  command_len)
+{
+    size_t column = (size_t) terminal->start.column + command_len;
+    size_t line   = column / (size_t) terminal->max_column;
+
+    terminal->end.column = (int) column % terminal->max_column;
+    terminal->end.line   = terminal->start.line + (int) line;
+
+    if (terminal->end.line > terminal->max_line)
+    {
+        terminal->start.line -= (terminal->end.line - terminal->max_line);
+        terminal->end.line = terminal->max_line;
+    }
 }
 
 /**
  * @brief Récupère les valeurs de certain Termcaps.
  * @param terminal Structure interne Terminal
+ * @return 0 si tous les termcaps ont été chargé, 1 autrement.
  */
-static void ft_get_termcaps(const char ** const capabilities)
+static int ft_get_termcaps(const char ** const capabilities)
 {
     static char *caps[] = {
         "cd", // Efface la ligne et celles sous le curseur.
@@ -87,22 +135,25 @@ static void ft_get_termcaps(const char ** const capabilities)
         "mr", // Active le mode surlignage.
         "nw"  // Déplace le curseur au début de la ligne suivante.
     };
-    unsigned long iter = 0;
+    unsigned long iter  = 0;
+    int           error = 0;
 
-#pragma unroll(sizeof(caps) / sizeof(caps[0]))
-    while (iter < sizeof(caps) / sizeof(caps[0]))
+#pragma unroll(LENGTH_OF(caps))
+    while (iter < LENGTH_OF(caps))
     {
         capabilities[iter] = NULL;
         capabilities[iter] = tgetstr(caps[iter], NULL);
         if (capabilities[iter] == NULL && iter != TERMCAP_MOVE_CURSOR_DOWN)
         {
             ft_log(SH_LOG_LEVEL_FATAL, "termcaps: capability %s not available.", caps[iter]);
+            error = 1;
         }
         iter++;
     }
+    return (error);
 }
 
-void ft_load_termcaps(t_term *terminal, void *shell_ctx)
+int ft_shell_terminal_load_termcaps(t_term *terminal, void *shell_ctx)
 {
     char       *tty_name = NULL;
     const char *term     = NULL;
@@ -110,43 +161,49 @@ void ft_load_termcaps(t_term *terminal, void *shell_ctx)
 
     if (isatty(STDIN_FILENO) == 0)
     {
-        return ft_log(SH_LOG_LEVEL_FATAL, "termcaps: Terminal not valid.");
+        ft_log(SH_LOG_LEVEL_FATAL, "termcaps: Terminal not valid.");
+        return (1);
     }
     tty_name = ttyname(STDIN_FILENO);
     if (tty_name == NULL)
     {
-        return ft_log(SH_LOG_LEVEL_FATAL, "termcaps: Not connected to a terminal->");
+        ft_log(SH_LOG_LEVEL_FATAL, "termcaps: Not connected to a terminal");
+        return (1);
     }
     terminal->fd = open(tty_name, O_RDWR | O_CLOEXEC);
     if (terminal->fd == -1)
     {
-        return ft_log(SH_LOG_LEVEL_FATAL, "termcaps: Failed to open tty \"%s\".", tty_name);
+        ft_log(SH_LOG_LEVEL_FATAL, "termcaps: Failed to open tty \"%s\".", tty_name);
+        return (1);
     }
     if (tcgetattr(terminal->fd, &terminal->ios) != 0)
     {
-        return (ft_log(SH_LOG_LEVEL_FATAL, "termcaps: Can't get terminal attributes."));
+        (ft_log(SH_LOG_LEVEL_FATAL, "termcaps: Can't get terminal attributes."));
+        return (1);
     }
     term = ft_getenv("TERM", shell_ctx);
     if (term == NULL)
     {
-        return ft_log(SH_LOG_LEVEL_FATAL, "termcaps: Specify a terminal type in your environment.");
+        ft_log(SH_LOG_LEVEL_FATAL, "termcaps: Specify a terminal type in your environment.");
+        return (1);
     }
     ret = tgetent(terminal->desc, term);
     if (ret <= 0)
     {
-        return ft_log(SH_LOG_LEVEL_FATAL,
-                      "termcaps: %s.",
-                      (ret == 0) ? "Terminal not defined in database" : "Termcap's data base files unavailable");
+        ft_log(SH_LOG_LEVEL_FATAL,
+               "termcaps: %s.",
+               (ret == 0) ? "Terminal not defined in database" : "Termcap's data base files unavailable");
+        return (1);
     }
-    ft_get_termcaps((const char ** const) terminal->capabilities);
+    return ft_get_termcaps((const char ** const) terminal->capabilities);
 }
 
-int ft_change_terminal_attributes(t_term *terminal)
+int ft_shell_terminal_change_attributes(t_term *terminal)
 {
     struct termios termios;
 
     termios = terminal->ios;
-    termios.c_lflag &= ~(ICANON | ECHO | ISIG);
+    REMOVE_BIT(termios.c_lflag, ICANON | ECHO | ISIG);
     termios.c_cc[VMIN]  = 1;
     termios.c_cc[VTIME] = 0;
     if ((tcsetattr(terminal->fd, TCSANOW, &termios)) == -1)
@@ -157,7 +214,7 @@ int ft_change_terminal_attributes(t_term *terminal)
     return (0);
 }
 
-void ft_restore_terminal_attributes(t_term *terminal)
+void ft_shell_terminal_restore_attributes(t_term *terminal)
 {
     if (tcsetattr(terminal->fd, TCSANOW, &terminal->ios) == -1)
     {
@@ -179,10 +236,34 @@ void ft_term_clear_cursor_and_under(t_term *terminal)
     write(STDOUT_FILENO, cap, ft_strlen(cap));
 }
 
-void ft_term_move_cursor(t_term *terminal, int column, int line)
+void ft_term_move_cursor(t_term *terminal, uint32_t options)
 {
-    char *cap = tgoto(terminal->capabilities[TERMCAP_MOVE_CURSOR], column, line);
+    int   column = 0;
+    int   line   = 0;
+    char *cap    = NULL;
 
+    if (TEST_BIT(options, MOVE_CURSOR_START))
+    {
+        column = terminal->start.column;
+        line   = terminal->start.line;
+    }
+    if (TEST_BIT(options, MOVE_CURSOR_CURRENT))
+    {
+        column = terminal->current.column;
+        line   = terminal->current.line;
+    }
+    if (TEST_BIT(options, MOVE_CURSOR_END))
+    {
+        column = terminal->end.column;
+        line   = terminal->end.line;
+    }
+    if (TEST_BIT(options, CHANGE_CURRENT))
+    {
+        terminal->current.column = column;
+        terminal->current.line   = line;
+    }
+
+    cap = tgoto(terminal->capabilities[TERMCAP_MOVE_CURSOR], column, line);
     write(STDOUT_FILENO, cap, ft_strlen(cap));
 }
 
@@ -203,13 +284,6 @@ void ft_term_insert_mode_off(t_term *terminal)
 void ft_term_insert_mode_on(t_term *terminal)
 {
     char *cap = terminal->capabilities[TERMCAP_INSERT_MODE_ON];
-
-    write(STDOUT_FILENO, cap, ft_strlen(cap));
-}
-
-void ft_term_move_cursor_left(t_term *terminal)
-{
-    char *cap = terminal->capabilities[TERMCAP_MOVE_CURSOR_LEFT];
 
     write(STDOUT_FILENO, cap, ft_strlen(cap));
 }

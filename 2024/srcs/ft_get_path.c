@@ -12,25 +12,26 @@
 
 #include "libft.h"
 #include <stdlib.h>
+#include <sys/syslimits.h>
 
 static char *ft_generate_path_from_table(char **table)
 {
-    char *path = NULL;
-    char *tmp  = NULL;
+    char path[PATH_MAX] = { 0 };
 
-    path = ft_strdup("/");
-    while (table && *table != NULL)
+    path[0] = '/';
+    if (table != NULL)
     {
-        tmp = ft_strjoin(path, *table);
-        free(path);
-        path = ft_strjoin(tmp, "/");
-        free(tmp);
-        table++;
+        while (*table != NULL)
+        {
+            ft_strncat(path, *table, sizeof(path));
+            ft_strncat(path, "/", sizeof(path));
+            table++;
+        }
     }
-    return (path);
+    return ft_strdup(path);
 }
 
-static int ft_remove_field_from_table(char **table, size_t pos, size_t times)
+static size_t ft_remove_field_from_table(char **table, size_t pos, size_t times)
 {
     size_t tablen = 0;
     size_t repeat = 0;

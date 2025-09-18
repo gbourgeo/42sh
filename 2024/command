@@ -8,4 +8,7 @@ les quotes:"double"|'simple'&\'backslash\"et_tout_ceci_facilement. fin
 " Cette quote >' est quotée ", 'celle-là "< aussi ' et_celles_là  \', \" sont_échapées.
 
 Expansions: ${'fighs jvh "as' 2>fkjh }cool `est ce que `oui $(ca marche aussi) lol
-Expansions:${} ${} $() $(()) `` ${}$ ( ). fin
+Expansions:${} ${} $() $(()) `` ${}$ ( ). { }... ->- fin
+Nested_expansions: $( here it comes $( nested ) ) ; $($()) ;
+$( $( ) );ls
+Nested_expansions: $( $( ) );${ ${ } };` ` ` `;` $( ) `;end

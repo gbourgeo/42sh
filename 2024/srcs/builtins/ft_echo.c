@@ -10,71 +10,101 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "ft_builtins.h"
+#include "ft_defines.h"
+#include "ft_shell.h"
+#include "ft_shell_builtins.h"
 #include "libft.h"
-
+#include <stddef.h>
 #include <unistd.h>
 
-static echo_e echo_option(const char **args, int *pos)
+/**
+ * @brief Parse les arguments du builtin "echo".
+ * Une option commence forcèment par le charactère '-'.
+ * Les options prise en charge sont :
+ *
+ * * -n : Ne termine pas l'exécution par un retour à la ligne.
+ *
+ * * -e : Interprète les séquences d'échappement suivante :
+ *          '\a'    alert (bell),
+ *          '\b'    backspace,
+ *          '\c'    suppress trailing line,
+ *          '\e'    an escape character,
+ *          '\f'    form feed,
+ *          '\n'    new line,
+ *          '\r'    carriage return,
+ *          '\t'    horizontal tab,
+ *          '\v'    vertical tab,
+ *          '\\'    backslash,
+ *          '\0nnn' the eight-bit character whose value is the octal value nnn (0 to 3 local digits),
+ *          '\xHH'  the eight-bit character whose value is the hexadecimal value HH (1 or 2 hex digits),
+ *
+ * * -E : Désactive l'interprétation des séquences d'échappement (sur les systèmes le faisant par défaut).
+ * @param args      Liste des arguments
+ * @param pos[out]  Position du premier argument n'étant pas une option dans la liste
+ * @return Les options du builtin.
+ */
+static echo_e echo_parse_options(const char **args, size_t *pos)
 {
-    echo_e option_ret;
-    echo_e option_save;
-    int    i;
-    int    j;
+    echo_e option_ret = ECHO_END_WITH_NEWLINE;
+    size_t iter       = 0;
 
-    option_ret = ECHO_END_WITH_NEWLINE;
-    i          = 1;
-    while (args[i])
+    while (args[iter] != NULL)
     {
-        if (args[i][0] != '-')
-            break;
-        option_save = option_ret;
-        j           = 1;
-        while (args[i][j])
+        if (args[iter][0] != '-')
         {
-            if (args[i][j] == 'n')
-                option_save &= ~ECHO_END_WITH_NEWLINE;
-            else if (args[i][j] == 'e')
-                option_save |= (ECHO_INTERPRET_ESCAPE_CHAR);
-            else if (args[i][j] == 'E')
-                option_save &= ~ECHO_INTERPRET_ESCAPE_CHAR;
+            break;
+        }
+
+        echo_e option_save = option_ret;
+        size_t jter        = 1;
+
+        while (args[iter][jter])
+        {
+            if (args[iter][jter] == 'n')
+            {
+                REMOVE_BIT(option_save, ECHO_END_WITH_NEWLINE);
+            }
+            else if (args[iter][jter] == 'e')
+            {
+                ASSIGN_BIT(option_save, ECHO_INTERPRET_ESCAPE_CHAR);
+            }
+            else if (args[iter][jter] == 'E')
+            {
+                REMOVE_BIT(option_save, ECHO_INTERPRET_ESCAPE_CHAR);
+            }
             else
             {
-                option_save |= (ECHO_BREAK);
-                break;
+                *pos = iter;
+                return (option_ret);
             }
-            j++;
+            jter++;
         }
-        if (option_save & ECHO_BREAK)
-            break;
-        if (option_save & ECHO_END_WITH_NEWLINE)
-            option_ret |= ECHO_END_WITH_NEWLINE;
-        else
-            option_ret &= ~ECHO_END_WITH_NEWLINE;
-        if (option_save & ECHO_INTERPRET_ESCAPE_CHAR)
-            option_ret |= ECHO_INTERPRET_ESCAPE_CHAR;
-        else
-            option_ret &= ~ECHO_INTERPRET_ESCAPE_CHAR;
-        i++;
+        TEST_BIT(option_save, ECHO_END_WITH_NEWLINE) ?
+            ASSIGN_BIT(option_ret, ECHO_END_WITH_NEWLINE) :
+            REMOVE_BIT(option_ret, ECHO_END_WITH_NEWLINE);
+        TEST_BIT(option_save, ECHO_INTERPRET_ESCAPE_CHAR) ?
+            ASSIGN_BIT(option_ret, ECHO_INTERPRET_ESCAPE_CHAR) :
+            REMOVE_BIT(option_ret, ECHO_INTERPRET_ESCAPE_CHAR);
+        iter++;
     }
-    *pos = i;
+    *pos = iter;
     return (option_ret);
 }
 
-int ft_echo(const char **args, t_shell *shell)
+int ft_echo(const char **args, t_shell *shell _unused)
 {
-    echo_e option;
-    int    i;
+    size_t iter   = 0;
+    echo_e option = echo_parse_options(args + 1, &iter);
 
-    (void) shell;
-    option = echo_option(args, &i);
-    while (args[i])
+    while (args[iter])
     {
-        ft_putstr(args[i]);
+        ft_putstr(args[iter]);
         write(STDOUT_FILENO, " ", 1);
-        i++;
+        iter++;
     }
-    if (option & ECHO_END_WITH_NEWLINE)
+    if (TEST_BIT(option, ECHO_END_WITH_NEWLINE))
+    {
         write(STDOUT_FILENO, "\n", 1);
+    }
     return (0);
 }

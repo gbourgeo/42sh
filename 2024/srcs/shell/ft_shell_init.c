@@ -10,17 +10,17 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "ft_builtins.h"
-#include "ft_command.h"
-#include "ft_highlight.h"
-#include "ft_history.h"
-#include "ft_prompt.h"
+#include "ft_defines.h"
 #include "ft_shell.h"
+#include "ft_shell_builtins.h"
+#include "ft_shell_history.h"
+#include "ft_shell_prompt.h"
+#include "ft_shell_terminal.h"
 #include "ft_snprintf.h"
-#include "ft_termios.h"
 #include "libft.h"
 #include <fcntl.h>
 #include <pwd.h>
+#include <signal.h>
 #include <string.h>
 #include <sys/ioctl.h>
 #include <sys/param.h>
@@ -73,7 +73,6 @@ static char **ft_init_internal_environ(const char *progname)
     struct winsize winsize;
     struct passwd *passwd             = NULL;
     char         **environ            = NULL;
-    char          *login              = NULL;
     char           buffer[MAXPATHLEN] = { 0 };
 
     if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &winsize) != -1)
@@ -83,38 +82,39 @@ static char **ft_init_internal_environ(const char *progname)
         ft_snprintf(buffer, sizeof(buffer), "%d", winsize.ws_row);
         environ = ft_modify_env("LINES", buffer, environ, 0);
     }
-    login = getlogin();
-    if (login != NULL)
+    passwd = getpwuid(getuid());
+    if (passwd != NULL)
     {
-        passwd = getpwnam(login);
-        if (passwd != NULL)
-        {
-            environ = ft_modify_env("HOME", passwd->pw_dir, environ, 0);
-            environ = ft_modify_env("LOGNAME", passwd->pw_name, environ, 0);
-        }
+        environ = ft_modify_env("HOME", passwd->pw_dir, environ, 0);
+        environ = ft_modify_env("LOGNAME", passwd->pw_name, environ, 0);
     }
     (void) getcwd(buffer, sizeof(buffer));
     environ = ft_modify_env("PWD", buffer, environ, 0);
     environ = ft_modify_env("SHELL", progname, environ, 0);
     environ = ft_modify_env("TMPDIR", "/tmp", environ, 0);
     environ = ft_modify_env("IFS", " \n\t", environ, 1);
+    environ = ft_modify_env("42SH_HISTORY_SIZE", SHELL_HISTORY_MAX_ELEMS, environ, 0);
+    environ = ft_modify_env("PS1", "%F{white}%p %F{yellow}%u %F{red}%w %F{white} > ", environ, 0);
     return (environ);
 }
 
 void ft_shell_init(const char *progname, const char **environ, t_shell *shell)
 {
-    shell->options      = 0;
-    shell->quit         = 0;
-    shell->status       = 0;
+    ft_shell_terminal_init(&shell->terminal);
+    ft_shell_prompt_init(&shell->prompt);
+    ft_shell_history_init(&shell->history);
+    shell->command      = NULL;
+    shell->yank         = NULL;
     shell->progname     = ft_strrchr(progname, '/');
     shell->progname     = (shell->progname != NULL) ? shell->progname + 1 : progname;
     shell->bin_path     = ft_strdup("/usr/gnu/bin:/usr/local/bin:/usr/bin:/bin");
     shell->global_env   = ft_init_global_environ(shell->progname, environ);
     shell->internal_env = ft_init_internal_environ(shell->progname);
-    ft_init_shell_prompt(&shell->prompt);
-    ft_init_shell_command(&shell->command);
-    shell->history = ft_init_shell_history(NULL); // TODO(gbo): parser le fichier d'historique de commandes
-    ft_init_shell_highlight(&shell->highlighted);
-    ft_init_shell_terminal(&shell->terminal);
-    ft_memset(shell->sigs, -1, sizeof(shell->sigs));
+    for (size_t iter = 0; iter < LENGTH_OF(shell->sigs); iter++)
+    {
+        shell->sigs[iter] = SIG_ERR;
+    }
+    shell->options = 0;
+    shell->quit    = 0;
+    shell->status  = 0;
 }

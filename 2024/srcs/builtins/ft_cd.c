@@ -10,9 +10,12 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "ft_builtins.h"
-#include "ft_log.h"
+#include "ft_defines.h"
+#include "ft_shell.h"
+#include "ft_shell_builtins.h"
+#include "ft_shell_log.h"
 #include "libft.h"
+#include <stddef.h>
 #include <stdlib.h>
 #include <sys/stat.h>
 #include <unistd.h>
@@ -51,14 +54,13 @@ static int ft_cd_chdir_error(char *pwd, const char *dirname, const char *cmdname
 
 static int cd_write_in_pwd(cd_e option, const char *dirname, const char *cmdname, t_shell *shell)
 {
-    char *pwd = NULL;
-    char *tmp = NULL;
+    char *pwd = cd_check(dirname, cmdname, shell);
 
-    pwd = cd_check(dirname, cmdname, shell);
     if (chdir(pwd) != -1)
     {
-        tmp = pwd;
-        if (option & CD_RESOLVE_BEFORE)
+        char *tmp = pwd;
+
+        if (TEST_BIT(option, CD_RESOLVE_BEFORE))
         {
             pwd = ft_getcwd(tmp, shell);
             free(tmp);
@@ -89,7 +91,8 @@ static int cd_search_in_pwd(const char **dirs, const char *arg_name, t_shell *sh
     char *tmp = NULL;
 
     pwd = (char *) ft_getenv("PWD", shell);
-    if ((tmp = ft_strstr(pwd, dirs[0])) == NULL)
+    tmp = ft_strstr(pwd, dirs[0]);
+    if (tmp == NULL)
     {
         ft_log(SH_LOG_LEVEL_WARN, "%s: string not in pwd: %s", arg_name, dirs[0]);
         return (1);
@@ -114,45 +117,43 @@ static int ft_cd_invalid_option(char option, const char *cmd_name)
 
 int ft_cd(const char **args, t_shell *shell)
 {
-    cd_e option;
-    int  i;
-    int  j;
+    cd_e option = CD_RESOLVE_UNDEFINED;
+    long iter   = 1;
+    long jter   = 1;
 
-    option = CD_RESOLVE_UNDEFINED;
-    i      = 1;
-    while (args[i] && args[i][0] == '-' && args[i][1] && !(option & CD_BREAK))
+    while (args[iter] && args[iter][0] == '-' && args[iter][1] && !TEST_BIT(option, CD_BREAK))
     {
-        j = 1;
-        while (args[i][j] && !(option & CD_BREAK))
+        jter = 1;
+        while (args[iter][jter] && !TEST_BIT(option, CD_BREAK))
         {
-            if (ft_strcmp(args[i], "--") == 0)
+            if (ft_strcmp(args[iter], "--") == 0)
             {
-                option |= CD_BREAK;
+                ASSIGN_BIT(option, CD_BREAK);
             }
-            else if (args[i][j] == 'P')
+            else if (args[iter][jter] == 'P')
             {
                 option = CD_RESOLVE_BEFORE;
             }
-            else if (args[i][j] == 'L')
+            else if (args[iter][jter] == 'L')
             {
                 option = CD_RESOLVE_AFTER;
             }
             else
             {
-                return (ft_cd_invalid_option(args[i][j], args[0]));
+                return (ft_cd_invalid_option(args[iter][jter], args[0]));
             }
-            j++;
+            jter++;
         }
-        i++;
+        iter++;
     }
-    if (!args[i] || !args[i + 1])
+    if (!args[iter] || !args[iter + 1])
     {
-        return (cd_write_in_pwd(option, args[i], args[0], shell));
+        return (cd_write_in_pwd(option, args[iter], args[0], shell));
     }
-    if (!args[i + 2])
+    if (!args[iter + 2])
     {
-        return (cd_search_in_pwd(args + i, args[0], shell));
+        return (cd_search_in_pwd(args + iter, args[0], shell));
     }
-    ft_log(SH_LOG_LEVEL_WARN, "%s: too many arguments: %s", args[0], args[i + 3]);
+    ft_log(SH_LOG_LEVEL_WARN, "%s: too many arguments: %s", args[0], args[iter + 3]);
     return (1);
 }

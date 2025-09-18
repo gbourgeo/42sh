@@ -1,7 +1,7 @@
 /****************************************************************************/
 /*                                                                          */
 /*                                                       :::      ::::::::  */
-/*  ft_parser.c                                        :+:      :+:    :+:  */
+/*  ft_shell_command_parse.c                           :+:      :+:    :+:  */
 /*                                                   +:+ +:+         +:+    */
 /*  By: gbourgeo <gbourgeo@student.42.fr>          +#+  +:+       +#+       */
 /*                                               +#+#+#+#+#+   +#+          */
@@ -10,10 +10,13 @@
 /*                                                                          */
 /****************************************************************************/
 
-#include "ft_builtins.h"
 #include "ft_shell.h"
-#include "ft_token.h"
+#include "ft_shell_builtins.h"
+#include "ft_shell_command.h"
+#include "ft_shell_token.h"
 #include "libft.h"
+#include <stddef.h>
+#include <stdint.h>
 #include <stdlib.h>
 
 // static void     ft_exec_pipes(t_args *list, t_shell *e)
@@ -36,7 +39,7 @@
 // {
 //     pid_t       pid;
 
-//     ft_restore_terminal_attributes(e);
+//     ft_shell_terminal_restore_attributes(e);
 //     while (list != NULL)
 //     {
 //         if (list->args && *list->args && list->pipe)
@@ -56,7 +59,7 @@
 //             ft_exec(list, e);
 //         list = list->next;
 //     }
-//     ft_change_terminal_attributes(e);
+//     ft_shell_terminal_change_attributes(e);
 // }
 
 // static t_args   *ft_analyse(char **args, int type, t_shell *e)
@@ -85,21 +88,49 @@
 //     return (list);
 // }
 
+static uint8_t *ft_prepare_command(t_cmd *command)
+{
+    uint8_t *buffer = ft_ustrdup(command->buffer);
+    size_t   pos    = 0;
+
+    if (buffer != NULL)
+    {
+        while (buffer[pos] != '\0')
+        {
+            if (buffer[pos] == '\\' && buffer[pos + 1] == '\n')
+            {
+                ft_memcpy(buffer + pos, buffer + pos + 2, command->len - pos); // bizarre attention
+                command->len -= 2;
+            }
+            else
+            {
+                pos++;
+            }
+        }
+    }
+    return (buffer);
+}
+
 /**
  * @brief Parsing de commande:
  *
  * - Tokenisation
  */
-void ft_parse_command(t_shell *shell)
+void ft_shell_command_parse(t_shell *shell)
 {
+    uint8_t *buffer     = NULL;
     t_token *token_list = NULL;
     char   **args       = NULL;
     char    *cmd        = NULL;
     t_args  *list       = NULL;
 
-    ft_token_recognition(&token_list, shell->command.buffer, "", ft_getenv("IFS", shell));
+    buffer = ft_prepare_command(shell->command);
+    (void) ft_token_recognition(&token_list,
+                                buffer,
+                                (const uint8_t *) "",
+                                (const uint8_t *) ft_getenv("IFS", shell));
     debug_tokens(token_list, shell);
-    // if ((cmd = ft_lexical_analysis(shell->command.buffer))
+    // if ((cmd = ft_lexical_analysis(shell->command->buffer))
     // && (args = ft_split_whitespaces(cmd))
     // && !ft_syntax_analysis(args))
     // {
@@ -108,8 +139,9 @@ void ft_parse_command(t_shell *shell)
     //         ft_run_parser(list, shell);
     //     }
     // }
-    ft_free_list(&list);
+    free(buffer);
     ft_free_token_list(token_list);
     ft_freetab(&args);
     free(cmd);
+    ft_free_list(&list);
 }

@@ -1,7 +1,7 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   ft_log.h                                           :+:      :+:    :+:   */
+/*   ft_shell_log.h                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: gbourgeo <gbourgeo@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
@@ -10,8 +10,8 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-#ifndef _FT_LOG_H_
-#define _FT_LOG_H_
+#ifndef _FT_SHELL_LOG_H_
+#define _FT_SHELL_LOG_H_
 
 typedef enum
 {
@@ -27,4 +27,4 @@ typedef enum
  ******************************************************************************/
 void ft_log(log_level_e log_level, const char *err_str, ...);
 
-#endif /* _FT_LOG_H_ */
+#endif /* _FT_SHELL_LOG_H_ */

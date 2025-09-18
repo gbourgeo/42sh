@@ -10,7 +10,6 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-// #include "ft_highlight.h"
 #include "ft_shell.h"
 
 void ft_highlight_paste(t_shell *shell)

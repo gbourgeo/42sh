@@ -10,24 +10,32 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "ft_builtins.h"
-#include "ft_log.h"
+#include "ft_shell.h"
+#include "ft_shell_builtins.h"
+#include "ft_shell_log.h"
 #include "libft.h"
+#include <stddef.h>
 #include <stdlib.h>
 
-static char *cd_check_special_arg(const char *dirname, const char *cmdname, t_shell *shell)
+static int cd_check_special_arg(
+    char      **pwd,
+    const char *dirname,
+    const char *cmdname,
+    t_shell    *shell)
 {
     const char *ptr = NULL;
 
+    *pwd = NULL;
     if (dirname == NULL || ft_strcmp(dirname, "~") == 0)
     {
         ptr = ft_getenv("HOME", shell);
         if (ptr != NULL)
         {
-            return (ft_strjoin(ptr, dirname + 1));
+            *pwd = ft_strjoin(ptr, dirname + 1);
+            return (0);
         }
         ft_log(SH_LOG_LEVEL_WARN, "%s: HOME not defined", cmdname);
-        return ((char *) -1);
+        return (-1);
     }
     if (ft_strcmp(dirname, "-") == 0)
     {
@@ -35,21 +43,21 @@ static char *cd_check_special_arg(const char *dirname, const char *cmdname, t_sh
         if (ptr != NULL)
         {
             ft_putendl(ptr);
-            return (ft_strdup(ptr));
+            *pwd = ft_strdup(ptr);
+            return (0);
         }
         ft_log(SH_LOG_LEVEL_WARN, "%s: OLDPWD not defined", cmdname);
-        return ((char *) -1);
+        return (-1);
     }
-    return (NULL);
+    return (0);
 }
 
 char *cd_check(const char *dirname, const char *cmdname, t_shell *shell)
 {
-    char *pwd;
-    char *tmp;
+    char *pwd = NULL;
+    char *tmp = NULL;
 
-    pwd = cd_check_special_arg(dirname, cmdname, shell);
-    if (pwd == (void *) -1)
+    if (cd_check_special_arg(&pwd, dirname, cmdname, shell) != 0)
     {
         return (NULL);
     }

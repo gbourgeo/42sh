@@ -10,121 +10,133 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "ft_command.h"
-#include "ft_highlight.h"
+#include "ft_defines.h"
 #include "ft_shell.h"
-#include "ft_termios.h"
-#include "ft_termkeys.h"
+#include "ft_shell_command.h"
+#include "ft_shell_constants.h"
+#include "ft_shell_terminal.h"
+#include "ft_shell_termkeys.h"
 #include "libft.h"
+#include <stddef.h>
+#include <stdint.h>
 
-/**
- * @brief Supprime un caractère du buffer de la commande.
- * @param[in] command Structure d'une commande
- */
-static void ft_delete_character(t_cmd *command)
-{
-    char         *buffer = command->buffer;
-    unsigned long pos    = command->pos;
-
-    if (buffer[pos] != '\0')
-    {
-        ft_strcpy(buffer + pos, buffer + pos + 1);
-        command->buffer_len -= 1;
-    }
-}
-
-/**
- * @brief Fonction de suppression d'un caractère à droite ou sous le curseur
- * (dépendamment de si celui-ci est une barre ou un block)
- * @param[in] shell_ctx Structure d'environnement du shell
- */
 void ft_delete_character_right(t_shell *shell)
 {
-    t_htext *high = shell->highlighted.texts;
+    t_cmd *command = shell->command;
 
-    /* Cas spécial du caractère dans une zone surlignée */
-    if (shell->highlighted.on == 0)
+    if (command->pos < command->len)
     {
-        while (high)
+        /* Shell mode intéractif */
+        if (TEST_BIT(shell->options, SHELL_INTERACTIVE_MODE))
         {
-            if (shell->command.pos >= high->tail
-                && shell->command.pos < high->head)
-            {
-                if (shell->command.pos == high->tail)
-                {
-                    high->tail += 1;
-                }
-                else
-                {
-                    high->head -= 1;
-                }
-                if (high->tail == high->head)
-                {
-                    break;
-                }
-            }
-            high = high->next;
+            /* Décalage des zones de textes surlignées */
+            ft_command_highlight_move_areas(command, SHELL_HIGHLIGHTED_AREA_REMOVE_CHAR_RIGHT, 1);
+        }
+        /* Supprime un caractère à la position du buffer */
+        ft_shell_command_delete_character(command, COMMAND_REMOVE_CHAR_RIGHT, 1);
+        if (TEST_BIT(shell->options, SHELL_INTERACTIVE_MODE))
+        {
+            ft_shell_terminal_calc_end_command_position(&shell->terminal, command->len);
+            ft_shell_command_print(shell->command, &shell->terminal, UINT32(COMMAND_PRINT_FROM_POS));
         }
     }
-    /* Suppression du caractère du buffer et réécriture de la commande à l'écran */
-    if (shell->command.buffer[shell->command.pos] != '\0')
-    {
-        ft_delete_character(&shell->command);
-        ft_term_remove_char(&shell->terminal); /* Supprime un caractère à la position du curseur */
-        ft_print_command(shell, 1);
-    }
 }
 
-/**
- * @brief Fonction de suppression d'un caractère à gauche du curseur
- * @param[in] shell_ctx Structure d'environnement du shell
- */
 void ft_delete_character_left(t_shell *shell)
 {
-    if (shell->command.pos > 0)
+    t_cmd *command = shell->command;
+
+    if (command->pos > 0)
     {
-        ft_move_cursor_left(shell);
-        ft_delete_character_right(shell);
+        /* Shell mode intéractif */
+        if (TEST_BIT(shell->options, SHELL_INTERACTIVE_MODE))
+        {
+            /* Décalage des zones de textes surlignées */
+            ft_command_highlight_move_areas(command, SHELL_HIGHLIGHTED_AREA_REMOVE_CHAR_LEFT, 1);
+        }
+        /* Supprime un caractère à gauche de la position du buffer */
+        ft_shell_command_delete_character(command, COMMAND_REMOVE_CHAR_LEFT, 1);
+        if (TEST_BIT(shell->options, SHELL_INTERACTIVE_MODE))
+        {
+            ft_shell_terminal_calc_current_command_position(&shell->terminal, command->pos);
+            ft_shell_terminal_calc_end_command_position(&shell->terminal, command->len);
+            ft_term_move_cursor(&shell->terminal, MOVE_CURSOR_CURRENT);
+            ft_shell_command_print(shell->command, &shell->terminal, UINT32(COMMAND_PRINT_FROM_POS));
+        }
     }
 }
 
-/**
- * @brief Fonction de suppression d'un mot à droite ou sous le curseur
- * (dépendamment de si celui-ci est une barre ou un block)
- * @param[in] shell_ctx Structure d'environnement du shell
- */
 void ft_delete_word_right(t_shell *shell)
 {
-    char *buffer = shell->command.buffer;
+    t_cmd   *command = shell->command;
+    uint8_t *buffer  = command->buffer;
+    size_t   pos     = command->pos;
+    size_t   value   = 0;
 
-    while (ft_iswhitespace(buffer[shell->command.pos]))
+    while (ft_iswhitespace((char) buffer[pos]))
     {
-        ft_delete_character_right(shell);
+        pos++;
     }
-    while (ft_isprint(buffer[shell->command.pos])
-           && !ft_iswhitespace(buffer[shell->command.pos]))
+    while (ft_isprint(buffer[pos])
+           && !ft_iswhitespace((char) buffer[pos]))
     {
-        ft_delete_character_right(shell);
+        pos++;
+    }
+    value = pos - command->pos;
+    if (value > 0)
+    {
+        /* Shell mode intéractif */
+        if (TEST_BIT(shell->options, SHELL_INTERACTIVE_MODE))
+        {
+            /* Décalage des zones de textes surlignées */
+            ft_command_highlight_move_areas(command, SHELL_HIGHLIGHTED_AREA_REMOVE_CHAR_RIGHT, value);
+        }
+        /* Supprime 'value' caractères à gauche de la position du buffer */
+        ft_shell_command_delete_character(command, COMMAND_REMOVE_CHAR_RIGHT, value);
+        if (TEST_BIT(shell->options, SHELL_INTERACTIVE_MODE))
+        {
+            ft_shell_terminal_calc_current_command_position(&shell->terminal, command->pos);
+            ft_shell_terminal_calc_end_command_position(&shell->terminal, command->len);
+            ft_term_move_cursor(&shell->terminal, MOVE_CURSOR_CURRENT);
+            ft_shell_command_print(shell->command, &shell->terminal, UINT32(COMMAND_PRINT_FROM_POS));
+        }
     }
 }
 
-/**
- * @brief Fonction de suppression d'un mot à gauche du curseur
- * @param[in] shell_ctx Structure d'environnement du shell
- */
 void ft_delete_word_left(t_shell *shell)
 {
-    char *buffer = shell->command.buffer;
+    t_cmd   *command = shell->command;
+    uint8_t *buffer  = command->buffer;
+    size_t   pos     = command->pos;
+    size_t   value   = 0;
 
-    while (shell->command.pos > 0
-           && ft_iswhitespace(buffer[shell->command.pos - 1]))
+    while (pos > 0 && ft_iswhitespace((char) buffer[pos - 1]))
     {
-        ft_delete_character_left(shell);
+        pos--;
     }
-    while (shell->command.pos > 0
-           && ft_isprint(buffer[shell->command.pos - 1])
-           && !ft_iswhitespace(buffer[shell->command.pos - 1]))
+    while (pos > 0
+           && ft_isprint(buffer[pos - 1])
+           && !ft_iswhitespace((char) buffer[pos - 1]))
     {
-        ft_delete_character_left(shell);
+        pos--;
+    }
+    value = command->pos - pos;
+    if (value > 0)
+    {
+        /* Shell mode intéractif */
+        if (TEST_BIT(shell->options, SHELL_INTERACTIVE_MODE))
+        {
+            /* Décalage des zones de textes surlignées */
+            ft_command_highlight_move_areas(command, SHELL_HIGHLIGHTED_AREA_REMOVE_CHAR_LEFT, value);
+        }
+        /* Supprime un caractère à gauche de la position du buffer */
+        ft_shell_command_delete_character(command, COMMAND_REMOVE_CHAR_LEFT, value);
+        if (TEST_BIT(shell->options, SHELL_INTERACTIVE_MODE))
+        {
+            ft_shell_terminal_calc_current_command_position(&shell->terminal, command->pos);
+            ft_shell_terminal_calc_end_command_position(&shell->terminal, command->len);
+            ft_term_move_cursor(&shell->terminal, MOVE_CURSOR_CURRENT);
+            ft_shell_command_print(shell->command, &shell->terminal, UINT32(COMMAND_PRINT_FROM_POS));
+        }
     }
 }

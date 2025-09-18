@@ -10,84 +10,89 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "ft_highlight.h"
+#include "ft_defines.h"
 #include "ft_shell.h"
-#include "ft_termios.h"
+#include "ft_shell_command.h"
+#include "ft_shell_terminal.h"
 #include <stdlib.h>
-#include <unistd.h>
 
 /**
- * @brief Fonction de création d'une nouvelle zone de surlignage.
+ * @brief Fonction de création d'une nouvelle zone de surlignage et insertion de
+ * celle-ci avant celle passée en paramètre.
+ * @param[in] htexts Liste de zone de texte surlignée
  * @param[in] pos Position actuelle du curseur
- * @param[in] htexts Liste des zones surlignées
- * @return Zone surlignée de la position ou une nouvelle zone de surlignage
+ * @return Une nouvelle zone surlignée
  */
-static t_htext *ft_highlight_new_area(size_t pos, t_htext *htexts)
+static t_higharea *ft_highlight_new_area(t_higharea *htexts, size_t pos)
 {
-    t_htext *ptr = ft_highlight_get_area(pos, htexts);
+    t_higharea *ptr = (t_higharea *) malloc(sizeof(*ptr));
 
-    if (ptr == NULL)
+    ptr->head = pos;
+    ptr->tail = pos;
+
+    if (htexts == NULL)
     {
-        ptr       = (t_htext *) malloc(sizeof(*ptr));
-        ptr->head = pos;
-        ptr->tail = pos;
-        ptr->next = NULL;
         ptr->prev = NULL;
-        if (htexts && htexts->prev)
+        ptr->next = NULL;
+    }
+    else
+    {
+        if (htexts->prev != NULL)
         {
             htexts->prev->next = ptr;
-            ptr->prev          = htexts->prev;
         }
-        if (htexts && htexts->next)
-        {
-            htexts->next->prev = ptr;
-            ptr->next          = htexts;
-        }
+        ptr->prev    = htexts->prev;
+        ptr->next    = htexts;
+        htexts->prev = ptr;
     }
     return (ptr);
 }
 
+/**
+ * @brief Retourne une zone de texte surlignées contenant la position actuelle
+ * dans le buffer de commande.
+ * @param[in] htexts Liste des zones surlignées
+ * @param[in] pos Position actuelle du curseur
+ * @return Zone surlignée de la position ou une nouvelle zone de surlignage.
+ */
+static t_higharea *ft_highlight_get_area(t_higharea *htexts, size_t pos)
+{
+    t_higharea *first = ft_highlight_first(htexts);
+
+    if (first != NULL)
+    {
+        htexts = first;
+        /* Parcours */
+        while (htexts != NULL)
+        {
+            if (pos < htexts->tail)
+            {
+                /* Création d'une nouvelle zone */
+                return (ft_highlight_new_area(htexts, pos));
+            }
+            if (pos <= htexts->head)
+            {
+                return (htexts);
+            }
+            htexts = htexts->next;
+        }
+    }
+    /* Création d'une nouvelle zone */
+    return (ft_highlight_new_area(first, pos));
+}
+
 void ft_highlight_mode(t_shell *shell)
 {
-    t_htext *text = NULL;
-
-    shell->highlighted.on = !shell->highlighted.on;
-    if (shell->highlighted.on == 0)
+    if (TEST_BIT(shell->command->option, COMMAND_HIGHLIGHT_MODE))   /* Highlight mode : actif */
     {
-        text = shell->highlighted.texts;
-        if (text->head >= text->tail)
-        {
-            ft_term_clear_modes(&shell->terminal); /* Désactive tous les modes actifs */
-        }
-        if (shell->command.buffer[shell->command.pos] != '\0')
-        {
-            ft_term_insert_mode_on(&shell->terminal);   /* Active le mode insertion */
-            ft_term_remove_char(&shell->terminal);      /* Efface 1 caractère sous la position du curseur */
-            write(STDOUT_FILENO, &shell->command.buffer[shell->command.pos], 1);
-            ft_term_move_cursor_left(&shell->terminal); /* Bouge le curseur à gauche d'1 colonne */
-            ft_term_insert_mode_off(&shell->terminal);  /* Désactive le mode insertion */
-        }
-        if (text->head == text->tail)
-        {
-            shell->highlighted.texts = ft_highlight_remove_area(shell->highlighted.texts);
-        }
-        else
-        {
-            shell->highlighted.texts = ft_highlight_sort_area(shell->highlighted.texts);
-        }
-        ft_term_clear_modes(&shell->terminal); /* Désactive tous les modes actifs */
+        REMOVE_BIT(shell->command->option, COMMAND_HIGHLIGHT_MODE); /* Désactive l'option */
+        ft_term_clear_modes(&shell->terminal);                      /* Désactive tous les modes actifs */
+        shell->command->harea = ft_highlight_sort_area(shell->command->harea);
     }
-    else
+    else                                                            /* Highlight mode : inactif */
     {
-        ft_term_highlight_mode_on(&shell->terminal); /* Active le mode surlignage */
-        text = ft_highlight_get_area(shell->command.pos, shell->highlighted.texts);
-        if (text == NULL)
-        {
-            shell->highlighted.texts = ft_highlight_new_area(shell->command.pos, shell->highlighted.texts);
-        }
-        else
-        {
-            shell->highlighted.texts = text;
-        }
+        ASSIGN_BIT(shell->command->option, COMMAND_HIGHLIGHT_MODE); /* Active l'option */
+        ft_term_highlight_mode_on(&shell->terminal);                /* Active le mode surlignage */
+        shell->command->harea = ft_highlight_get_area(shell->command->harea, shell->command->pos);
     }
 }

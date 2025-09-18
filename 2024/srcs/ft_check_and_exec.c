@@ -10,8 +10,8 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "ft_builtins.h"
 #include "ft_shell.h"
+#include "ft_shell_builtins.h"
 #include "libft.h"
 
 int check_and_exec(const char **args, t_shell *shell)
@@ -44,7 +44,7 @@ int check_and_exec(const char **args, t_shell *shell)
         }
         else
         {
-            return (fork_function(args, shell));
+            return (int) (fork_function(args, shell));
         }
     }
     return (shell->status);

@@ -11,8 +11,9 @@
 /* ************************************************************************** */
 
 #include "ft_shell.h"
-#include "ft_token.h"
+#include "ft_shell_token.h"
 #include "libft.h"
+#include <stddef.h>
 #include <stdlib.h>
 
 void ft_free_list(t_args **list)

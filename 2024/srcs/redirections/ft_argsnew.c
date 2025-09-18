@@ -10,15 +10,15 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "ft_token.h"
+#include "ft_shell_token.h"
 #include "libft.h"
 #include <stdlib.h>
 
 t_args *ft_argsnew(const char **args, int type)
 {
-    t_args *new = NULL;
+    t_args *new = (t_args *) malloc(sizeof(t_args));
 
-    if ((new = (t_args *) malloc(sizeof(t_args))) == NULL)
+    if (new == NULL)
     {
         return (NULL);
     }

@@ -10,31 +10,34 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "ft_builtins.h"
-#include "ft_log.h"
+#include "ft_shell.h"
+#include "ft_shell_builtins.h"
+#include "ft_shell_log.h"
 #include "libft.h"
+#include <stddef.h>
 #include <stdlib.h>
 
 static int new_env(const char **args, char **env)
 {
-    int i;
+    size_t iter = 0;
 
-    i = 0;
     if (env == NULL)
-        return (0);
-    while (env[i] != NULL)
     {
-        if (ft_strcmp(env[i], args[1]) == '=')
+        return (0);
+    }
+    while (env[iter] != NULL)
+    {
+        if (ft_strcmp(env[iter], args[1]) == '=')
         {
-            free(env[i]);
-            while (env[i + 1] != NULL)
+            free(env[iter]);
+            while (env[iter + 1] != NULL)
             {
-                env[i] = env[i + 1];
-                i++;
+                env[iter] = env[iter + 1];
+                iter++;
             }
-            env[i] = NULL;
+            env[iter] = NULL;
         }
-        i++;
+        iter++;
     }
     return (0);
 }
@@ -42,8 +45,12 @@ static int new_env(const char **args, char **env)
 int ft_unsetenv(const char **args, t_shell *shell)
 {
     if (!args[1])
+    {
         ft_log(SH_LOG_LEVEL_WARN, "%s: No assignment", args[0]);
+    }
     else
-        return (new_env(args, (char **) shell->global_env));
+    {
+        return (new_env(args, shell->global_env));
+    }
     return (1);
 }

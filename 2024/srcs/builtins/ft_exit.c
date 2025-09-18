@@ -10,10 +10,11 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "ft_builtins.h"
-#include "ft_log.h"
+#include "ft_shell.h"
+#include "ft_shell_builtins.h"
+#include "ft_shell_log.h"
+#include "ft_shell_terminal.h"
 #include "libft.h"
-
 #include <unistd.h>
 
 static void ft_real_exit(t_shell *shell)
@@ -25,26 +26,31 @@ static void ft_real_exit(t_shell *shell)
 
 void ft_exit(const char **args, t_shell *shell)
 {
-    int i;
+    int iter = 0;
 
-    i = 0;
+    /* Vérification des paramètres */
     if (!args || !args[0] || !args[1])
-        return (ft_real_exit(shell));
-    if (!args[2])
     {
-        while (args[1][i] != '\0')
-        {
-            if (!ft_isdigit(args[1][i]))
-            {
-                ft_log(SH_LOG_LEVEL_ERR, "%s: Non numeric value detected.", args[0]);
-                shell->status = 255;
-                return (ft_real_exit(shell));
-            }
-            i++;
-        }
-        shell->status = ft_atoi(args[1]);
-        return (ft_real_exit(shell));
+        ft_real_exit(shell);
+        return;
     }
-    ft_log(SH_LOG_LEVEL_WARN, "%s: too many arguments.", args[0]);
-    shell->status = 1;
+    if (args[2])
+    {
+        ft_log(SH_LOG_LEVEL_WARN, "%s: too many arguments.", args[0]);
+        return;
+    }
+    /* Vérification du paramètre (contenant que des digits) */
+    while (args[1][iter] != '\0')
+    {
+        if (!ft_isdigit(args[1][iter]))
+        {
+            ft_log(SH_LOG_LEVEL_ERR, "%s: Non numeric value detected.", args[0]);
+            shell->status = 255;
+            ft_real_exit(shell);
+            return;
+        }
+        iter++;
+    }
+    shell->status = ft_atoi(args[1]);
+    ft_real_exit(shell);
 }

@@ -15,11 +15,9 @@
 
 static char *ft_create_command(char *command)
 {
-    int i;
-    int len;
+    size_t i = 0;
+    size_t len = 0;
 
-    i   = 0;
-    len = 0;
     while (command[i])
     {
         if (ft_strchr("<>|&;", command[i]) != NULL)

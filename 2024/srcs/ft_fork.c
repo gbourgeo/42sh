@@ -10,11 +10,12 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "ft_builtins.h"
-#include "ft_constants.h"
-#include "ft_log.h"
 #include "ft_shell.h"
+#include "ft_shell_builtins.h"
+#include "ft_shell_constants.h"
+#include "ft_shell_log.h"
 #include "libft.h"
+#include <stddef.h>
 #include <stdlib.h>
 #include <sys/stat.h>
 #include <sys/wait.h>
@@ -85,22 +86,22 @@ static char *get_path_from(const char *cmd, t_shell *shell)
     return (ret);
 }
 
-int fork_function(const char **args, t_shell *shell)
+retcode_e fork_function(const char **args, t_shell *shell)
 {
-    char *path   = NULL;
-    pid_t pid    = 0;
-    int   status = SHELL_FATAL_STATUS;
+    char     *path   = NULL;
+    pid_t     pid    = 0;
+    retcode_e status = SHELL_STATUS_FATAL;
 
     path = get_path_from(args[0], shell);
     if (path == NULL)
     {
         ft_log(SH_LOG_LEVEL_WARN, "command not found: %s", args[0]);
-        return (127);
+        return (SHELL_STATUS_FATAL);
     }
     pid = fork();
     if (pid > 0)
     {
-        if (waitpid(pid, &status, 0) != pid)
+        if (waitpid(pid, (int *) &status, 0) != pid)
         {
             ft_log(SH_LOG_LEVEL_WARN, "Waitpid error");
         }

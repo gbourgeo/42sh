@@ -10,24 +10,28 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "ft_builtins.h"
-#include "ft_log.h"
-#include "libft.h"
-
+#include "ft_defines.h"
+#include "ft_shell.h"
+#include "ft_shell_builtins.h"
+#include "ft_shell_log.h"
+#include <errno.h>
+#include <stddef.h>
+#include <string.h>
 #include <unistd.h>
 
-char *ft_getcwd(const char *dir, t_shell *shell)
+char *ft_getcwd(const char *dir _unused, t_shell *shell)
 {
-    char       *pwd;
-    const char *tmp;
-    int         full_size;
+    char       *pwd = NULL;
+    const char *tmp = ft_getenv("PWD", shell);
 
-    pwd       = NULL;
-    tmp       = ft_getenv("PWD", shell);
-    full_size = ft_strlen(tmp) + ft_strlen(dir);
     if (tmp == NULL)
+    {
         return (NULL);
-    if ((pwd = getcwd(pwd, full_size)) == NULL)
-        ft_log(SH_LOG_LEVEL_WARN, "getcwd: error");
+    }
+    pwd = getcwd(NULL, 0);
+    if (pwd == NULL)
+    {
+        ft_log(SH_LOG_LEVEL_WARN, "getcwd: %s", strerror(errno));
+    }
     return (pwd);
 }

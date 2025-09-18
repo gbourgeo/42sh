@@ -1,7 +1,7 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   ft_shell_exec.c                                    :+:      :+:    :+:   */
+/*   ft_shell_loop_args.c                               :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: gbourgeo <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
@@ -10,12 +10,17 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "ft_log.h"
+#include "ft_defines.h"
 #include "ft_shell.h"
-#include "ft_termios.h"
-#include "ft_termkeys.h"
+#include "ft_shell_command.h"
+#include "ft_shell_constants.h"
+#include "ft_shell_history.h"
+#include "ft_shell_log.h"
+#include "ft_shell_prompt.h"
+#include "ft_shell_terminal.h"
 #include <errno.h>
 #include <signal.h>
+#include <stddef.h>
 #include <string.h>
 #include <sys/fcntl.h>
 #include <unistd.h>
@@ -23,10 +28,10 @@
 extern t_shell g_shell; /* Structure de notre environnement global */
 
 /**
- * @brief Fonction générale de la capture des signaux.
+ * @brief Fonction générale de capture des signaux.
  * @param signum Numéro du signal capturé
  */
-static void    ft_break_this_signal(int signum)
+static void ft_break_this_signal(int signum)
 {
     if (signum == SIGINT)
     {
@@ -36,8 +41,8 @@ static void    ft_break_this_signal(int signum)
     //     main(0, NULL);
     else if (signum == SIGWINCH)
     {
-        ft_get_terminal_size(&g_shell.terminal);
-        ft_get_cursor_position(&g_shell.terminal);
+        ft_shell_terminal_get_size(&g_shell.terminal);
+        ft_shell_terminal_get_cursor_position(&g_shell.terminal, MOVE_CURSOR_CURRENT);
         // debug_command_line((char [16]){0}, &g_shell);
     }
 }
@@ -58,7 +63,7 @@ static void ft_catch_signals(t_shell *shell)
             shell->sigs[iter - 1] = signal(iter, &ft_break_this_signal);
             if (shell->sigs[iter - 1] == SIG_ERR)
             {
-                ft_log(SH_LOG_LEVEL_FATAL, "signal: catching %d failed", iter);
+                ft_log(SH_LOG_LEVEL_FATAL, "signal %d: %s", iter, strerror(errno));
             }
         }
         else
@@ -69,43 +74,33 @@ static void ft_catch_signals(t_shell *shell)
     }
 }
 
-void ft_shell_exec(const char **argv, t_shell *shell)
+void ft_shell_args_exec(const char **argv, t_shell *shell)
 {
-    char buf[MAX_KEY_SIZE] = { 0 };
-    long ret               = 1;
-
-    if (argv && *argv)
+    if (argv != NULL && *argv != NULL)
     {
         shell->terminal.fd = open(argv[0], O_RDONLY | O_CLOEXEC);
         if (shell->terminal.fd == -1)
         {
-            ft_log(SH_LOG_LEVEL_FATAL, "Unable to open file: %s", argv[0]);
+            ft_log(SH_LOG_LEVEL_FATAL, "%s: %s", strerror(errno), argv[0]);
+        }
+        else
+        {
+            ft_log(SH_LOG_LEVEL_DBG, "File '%s' opened successfully", argv[0]);
         }
     }
-    else
+    else if (ft_shell_terminal_load_termcaps(&shell->terminal, shell) == 0
+            && ft_shell_terminal_change_attributes(&shell->terminal) == 0)
     {
-        shell->options |= (unsigned int) SHELL_INTERACTIVE_MODE;
-        ft_load_termcaps(&shell->terminal, shell);
-        if (ft_change_terminal_attributes(&shell->terminal) == 0)
-        {
-            shell->options |= (unsigned int) SHELL_TERMATTR_LOADED;
-        }
+        ft_log(SH_LOG_LEVEL_DBG, "Terminal capabilities loaded and attributes changed successfully");
+        ASSIGN_BIT(shell->options, SHELL_INTERACTIVE_MODE);
+        ASSIGN_BIT(shell->options, SHELL_TERMATTR_LOADED);
+        // TODO(gbo): Parsing du fichier de conf du shell type .42shrc
+        shell->command_size = ft_shell_history_parse_file(&shell->command,
+                                                          &shell->history,
+                                                          shell->progname,
+                                                          (const char **) shell->internal_env);
+        ft_shell_prompt_create(&shell->prompt, (void *) shell);
         ft_catch_signals(shell);
-        shell->prompt.print = 1;
     }
-    /* Loop */
-    while (shell->quit == 0 && ret > 0)
-    {
-        if (shell->prompt.print != 0)
-        {
-            ft_shell_prompt(shell);
-            debug_command_line(buf, ret, shell);
-        }
-        ret = read(shell->terminal.fd, buf, sizeof(buf));
-        if (ret < 0)
-        {
-            ft_log(SH_LOG_LEVEL_FATAL, "read: %s", strerror(errno));
-        }
-        ft_key_analyser(buf, ret, shell);
-    }
+    shell->command = ft_shell_command_new(NULL, shell->command, 0);
 }

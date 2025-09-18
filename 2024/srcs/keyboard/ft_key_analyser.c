@@ -10,48 +10,38 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "ft_command.h"
-#include "ft_highlight.h"
-#include "ft_history.h"
+#include "ft_defines.h"
 #include "ft_shell.h"
-#include "ft_termios.h"
-#include "ft_termkeys.h"
+#include "ft_shell_command.h"
+#include "ft_shell_constants.h"
+#include "ft_shell_terminal.h"
+#include "ft_shell_termkeys.h"
 #include "libft.h"
+#include <stddef.h>
+#include <stdint.h>
+#include <stdlib.h>
 
-/**
- * @brief Traite la commande en cours.
- * @param[in] shell Structure interne du shell
- */
-static void ft_treat_command(t_shell *shell)
+static void ft_key_test(t_shell *shell _unused)
 {
-    if (shell->options & (unsigned int) SHELL_INTERACTIVE_MODE)
-    {
-        if (shell->highlighted.on != 0)
-        {
-            ft_term_clear_modes(&shell->terminal); /* Désactive tous les modes actifs */
-            shell->highlighted.on = 0;
-        }
-        ft_highlight_remove_all(&shell->highlighted.texts);
-        ft_move_cursor_end_of_command(shell);
-        ft_term_move_cursor_down(&shell->terminal);     /* Déplace le curseur au début de la ligne suivante */
-        ft_term_clear_line_and_under(&shell->terminal); /* Efface la ligne et celles sous le curseur */
-        shell->prompt.print = 1;
-    }
-    if (shell->command.buffer_len != 0)
-    {
-        ft_parse_command(shell);
-        shell->history = ft_history_new(shell->command.buffer, shell->history);
-        ft_command_reinit(&shell->command);
-    }
+    // ft_term_clear_cursor_and_under(&shell->terminal);
 }
 
-void ft_key_analyser(const char *buffer, long len, t_shell *shell)
+/**
+ * @brief Traitement des combinaisons et touches spéciales du clavier.
+ * @param buffer Buffer de réception des touches du clavier
+ * @param iter Position dans le buffer
+ * @param len Taille du buffer
+ * @param shell Contexte du shell
+ * @return 0 si aucune combinaison supportée n'a été détecté,
+ * la taille de la combinaison spéciale détectée autrement.
+ */
+static size_t ft_key_special(const uint8_t *buffer, size_t iter, size_t size, t_shell *shell)
 {
     static t_key keys[] = {
         { { 0x03 },                               1, ft_control_c                     }, /* Ctrl + C             */
         { { 0x04 },                               1, ft_control_d                     }, /* Ctrl + D             */
         { { 0x08 },                               1, ft_delete_word_left              }, /* Ctrl + Backspace     */
-        { { 0x0A },                               1, ft_treat_command                 }, /* Enter                */
+        { { 0x0A },                               1, ft_shell_command_exec            }, /* Enter                */
         { { 0x0C },                               1, ft_highlight_mode                }, /* Ctrl + L             */
         { { 0x10 },                               1, ft_highlight_paste               }, /* Ctrl + P             */
         { { 0x19 },                               1, ft_highlight_yank                }, /* Ctrl + Y             */
@@ -78,34 +68,56 @@ void ft_key_analyser(const char *buffer, long len, t_shell *shell)
         { { 0x1B, 0x79 },                         2, ft_highlight_yank                }, /* Alt + Y              */
         { { 0x1B, 0x7F },                         2, ft_delete_word_left              }, /* Alt + Backspace      */
         { { 0x7F },                               1, ft_delete_character_left         }, /* Backspace            */
+#if defined(__APPLE__) || defined(__MACH__)
+        { { 0x17 },                               1, ft_delete_word_left              }, /* Alt + Backspace      */
+        { { 0x1B, 0x62 },                         2, ft_move_word_left                }, /* Alt + Left           */
+        { { 0x1B, 0x5b, 0x33, 0x3b, 0x35, 0x7e }, 6, ft_delete_word_right             }, /* Ctrl + Delete        */
+        { { 0x1B, 0x66 },                         2, ft_move_word_right               }, /* Alt + Right          */
+        { { 0x1B, 0x0A },                         2, ft_key_test                      }, /* Alt + Enter          */
+        { { 0x1B },                               1, ft_clear_modes                   }, /* Esc                  */
+#endif
     };
-    long          iter = 0;
-    unsigned long jter = 0;
+    size_t jter = 0;
+
+#pragma unroll(LENGTH_OF(keys))
+    while (jter < LENGTH_OF(keys))
+    {
+        if (iter + keys[jter].code_len <= size
+            && ft_memcmp(keys[jter].code, &buffer[iter], keys[jter].code_len) == 0)
+        {
+            keys[jter].handler(shell);
+            return (keys[jter].code_len);
+        }
+        jter++;
+    }
+    return (0);
+}
+
+void ft_key_analyser(const uint8_t *buffer, size_t len, t_shell *shell)
+{
+    size_t iter = 0;
 
     while (iter < len)
     {
-        if (ft_isprint(buffer[iter]))
+        /* Est-ce une combinaison de touche spéciale ? */
+        if (TEST_BIT(shell->options, SHELL_INTERACTIVE_MODE))
         {
-            ft_insert_character(buffer[iter], shell);
-            if (shell->options & (unsigned int) SHELL_INTERACTIVE_MODE)
+            size_t found = ft_key_special(buffer, iter, len, shell);
+            if (found != 0)
             {
-                ft_print_character(shell);
-                ft_print_command(shell, 1);
+                iter += found;
+                continue;
             }
-            iter++;
-            continue;
+            ft_command_highlight_move_areas(shell->command, SHELL_HIGHLIGHTED_AREA_ADD_CHAR, 1);
         }
-        jter = 0;
-#pragma unroll(sizeof(keys) / sizeof(keys[0]))
-        while (jter < sizeof(keys) / sizeof(keys[0]))
+        /* Insertion du caractère dans le buffer de commande */
+        ft_shell_command_insert_character(shell->command, buffer[iter]);
+        /* Déplacement du curseur */
+        if (TEST_BIT(shell->options, SHELL_INTERACTIVE_MODE))
         {
-            if (ft_memcmp(keys[jter].code, &buffer[iter], keys[jter].code_len) == 0)
-            {
-                keys[jter].handler(shell);
-                iter += keys[jter].code_len - 1;
-                break;
-            }
-            jter++;
+            ft_shell_terminal_calc_current_command_position(&shell->terminal, shell->command->pos);
+            ft_shell_terminal_calc_end_command_position(&shell->terminal, shell->command->len);
+            ft_shell_command_print(shell->command, &shell->terminal, UINT32(COMMAND_PRINT_FROM_POS_LESS));
         }
         iter++;
     }
