@@ -127,7 +127,7 @@ void ft_shell_command_parse(t_shell *shell)
     buffer = ft_prepare_command(shell->command);
     (void) ft_token_recognition(&token_list,
                                 buffer,
-                                (const uint8_t *) "",
+                                (const uint8_t *) "\n",
                                 (const uint8_t *) ft_getenv("IFS", shell));
     debug_tokens(token_list, shell);
     // if ((cmd = ft_lexical_analysis(shell->command->buffer))

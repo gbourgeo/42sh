@@ -25,60 +25,42 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-typedef struct _align(64) debug_s
+typedef enum debug_function_id
 {
-    long   lines_printed; /* Compteur de ligne écrites */
-    size_t pos;           /* Sauvegarde de la position d'écriture du buffer */
-    size_t buf_len;       /* Sauvegarde de la taille du buffer */
-    int    col_max;       /* Sauvegarde du nombre de colonne du terminal */
-    int    start_line;    /* Position de la ligne de commande après affichage des infos */
-    int    current_line;  /* Position de la ligne de commande après affichage des infos */
-    int    end_line;      /* Position de la ligne de commande après affichage des infos */
+    RANDOM_PRINT_INFO,
+    BUFFER_PRINT_INFO,
+    COMMAND_PRINT_INFO,
+    HIGHLIGHTED_TEXT_PRINT_INFO,
+    HISTORIC_PRINT_INFO,
+    CURSOR_PRINT_INFO,
+} funcid_e;
+
+typedef struct _align(4) debug_s
+{
+    int lines_printed; /* Compteur de ligne écrites */
 } debug_t;
 
 static void preexec_print_info(debug_t *dbg, t_shell *shell)
 {
+    /* Initialise la structure debug_t */
     dbg->lines_printed = 0;
-    dbg->pos           = shell->command->pos;
-    dbg->buf_len       = ft_strlen((const char *) shell->command->buffer);
-    dbg->col_max       = shell->terminal.max_column;
-
-    ft_term_clear_modes(&shell->terminal); /* Désactive tous les modes actifs */
-
-    /* Positionne le curseur sur la dernière ligne de la commande */
+    /* Désactive tous les modes actifs */
+    ft_term_clear_modes(&shell->terminal);
+    /* Positionne le curseur à la fin de la commande */
     ft_term_move_cursor(&shell->terminal, MOVE_CURSOR_END);
-    // while ((shell->prompt.printed_len + dbg->pos) / (size_t) dbg->col_max
-    //        < (shell->prompt.printed_len + dbg->buf_len) / (size_t) dbg->col_max)
-    // {
-    //     ft_term_move_cursor_down(&shell->terminal); /* Positionne le curseur au début de la ligne suivante */
-    //     dbg->pos += (size_t) shell->terminal.max_column;
-    // }
-
-    /* Si on est sur la dernière ligne du terminal,
-     * la ligne de la commande monte d'un cran à
-     * cause de l'affichage des infos */
-    dbg->start_line   = shell->terminal.start.line;
-    dbg->current_line = shell->terminal.current.line;
-    dbg->end_line     = shell->terminal.end.line;
 }
 
 static void postexec_print_info(debug_t *dbg, t_term *terminal, t_cmd *command)
 {
-    /* Restaure la ligne de la commande après affichage des infos */
-    terminal->start.line   = dbg->start_line;
-    terminal->current.line = dbg->current_line;
-    terminal->end.line     = dbg->end_line;
-
-    if (dbg->end_line + dbg->lines_printed >= terminal->max_line)
+    if (terminal->end.line + dbg->lines_printed > terminal->max_line)
     {
-        dbg->start_line -= ((dbg->end_line + (int) dbg->lines_printed) - terminal->max_line);
-        dbg->current_line -= ((dbg->end_line + (int) dbg->lines_printed) - terminal->max_line);
-        dbg->end_line -= ((dbg->end_line + (int) dbg->lines_printed) - terminal->max_line);
+        int lines = (terminal->end.line + dbg->lines_printed) - terminal->max_line - 1;
+        terminal->start.line -= lines;
+        terminal->current.line -= lines;
+        terminal->end.line -= lines;
     }
-
     /* Restauration de la position du curseur */
     ft_term_move_cursor(terminal, MOVE_CURSOR_CURRENT);
-
     /* Réactive le mode surlignage si nécessaire */
     if (TEST_BIT(command->option, COMMAND_HIGHLIGHT_MODE))
     {
@@ -86,33 +68,27 @@ static void postexec_print_info(debug_t *dbg, t_term *terminal, t_cmd *command)
     }
 }
 
-static void get_lines_printed(debug_t *dbg, long buff_print, t_term *terminal)
+static void add_lines_printed(debug_t *dbg, int char_printed, t_term *terminal)
 {
-    if (dbg->end_line + dbg->lines_printed >= terminal->max_line)
-    {
-        dbg->start_line   = dbg->start_line - ((dbg->end_line + (int) dbg->lines_printed) - terminal->max_line);
-        dbg->current_line = dbg->current_line - ((dbg->end_line + (int) dbg->lines_printed) - terminal->max_line);
-        dbg->end_line     = dbg->end_line - ((dbg->end_line + (int) dbg->lines_printed) - terminal->max_line);
-    }
-    dbg->lines_printed = dbg->lines_printed + (buff_print / terminal->max_column);
+    dbg->lines_printed = dbg->lines_printed + (char_printed / terminal->max_column) + 1;
 }
 
 static void random_print_info(debug_t *dbg, t_shell *shell)
 {
-    long buff_print = 0;
+    int buff_print = 0;
 
     ft_term_move_cursor_down(&shell->terminal);     /* Positionne le curseur au début de la ligne suivante */
     ft_term_clear_line_and_under(&shell->terminal); /* Efface la ligne courante et celles du dessous */
     buff_print = ft_printf("Highlight mode: \033[36m%s\033[0m, Prompt len: \033[36m%ld\033[0m",
                            TEST_BIT(shell->command->option, COMMAND_HIGHLIGHT_MODE) ? "on" : "off",
                            shell->prompt.printed_len);
-    get_lines_printed(dbg, buff_print, &shell->terminal);
+    add_lines_printed(dbg, buff_print, &shell->terminal);
 }
 
 static void buffer_print_info(const uint8_t *buf, long buff_len, debug_t *dbg, t_shell *shell)
 {
     long iter       = 0;
-    long buff_print = 0;
+    int  buff_print = 0;
 
     ft_term_move_cursor_down(&shell->terminal);     /* Positionne le curseur au début de la ligne suivante */
     ft_term_clear_line_and_under(&shell->terminal); /* Efface la ligne courante et celles du dessous */
@@ -123,12 +99,12 @@ static void buffer_print_info(const uint8_t *buf, long buff_len, debug_t *dbg, t
         iter++;
     }
     buff_print += ft_printf(" ]");
-    get_lines_printed(dbg, buff_print, &shell->terminal);
+    add_lines_printed(dbg, buff_print, &shell->terminal);
 }
 
 static void command_print_info(debug_t *dbg, t_shell *shell)
 {
-    long buff_print = 0;
+    int buff_print = 0;
 
     ft_term_move_cursor_down(&shell->terminal);     /* Positionne le curseur au début de la ligne suivante */
     ft_term_clear_line_and_under(&shell->terminal); /* Efface la ligne courante et celles du dessous */
@@ -137,14 +113,14 @@ static void command_print_info(debug_t *dbg, t_shell *shell)
                            shell->command->len,
                            shell->command->size,
                            shell->command->pos);
-    get_lines_printed(dbg, buff_print, &shell->terminal);
+    add_lines_printed(dbg, buff_print, &shell->terminal);
     /* Affiche la commande originelle de l'historique */
     if (shell->command->origin != NULL)
     {
         ft_term_move_cursor_down(&shell->terminal);     /* Positionne le curseur au début de la ligne suivante */
         ft_term_clear_line_and_under(&shell->terminal); /* Efface la ligne courante et celles du dessous */
-        buff_print = ft_printf("Original: %.*s", shell->terminal.max_column, shell->command->origin);
-        get_lines_printed(dbg, buff_print, &shell->terminal);
+        buff_print = ft_printf("Original: %.*s", &shell->terminal, shell->command->origin);
+        add_lines_printed(dbg, buff_print, &shell->terminal);
     }
 }
 
@@ -153,7 +129,7 @@ static void highlighted_text_print_info(debug_t *dbg, t_shell *shell)
     t_higharea *first      = shell->command->harea;
     t_higharea *harea      = NULL;
     int         high_nb    = 0;
-    long        buff_print = 0;
+    int         buff_print = 0;
 
     if (first == NULL)
     {
@@ -174,7 +150,7 @@ static void highlighted_text_print_info(debug_t *dbg, t_shell *shell)
         harea = harea->next;
     }
     buff_print = ft_printf("Highlighted areas: %d", high_nb);
-    get_lines_printed(dbg, buff_print, &shell->terminal);
+    add_lines_printed(dbg, buff_print, &shell->terminal);
 
     harea   = first;
     high_nb = 0;
@@ -196,7 +172,7 @@ static void highlighted_text_print_info(debug_t *dbg, t_shell *shell)
                                shell->command->buffer + start,
                                harea->tail,
                                harea->head);
-        get_lines_printed(dbg, buff_print, &shell->terminal);
+        add_lines_printed(dbg, buff_print, &shell->terminal);
         high_nb++;
         harea = harea->next;
     }
@@ -208,7 +184,7 @@ static void historic_print_info(debug_t *dbg, t_shell *shell)
     t_cmd *hist       = shell->command->next;
     char   buff[1024] = { 0 };
     long   hist_pos   = 0;
-    long   buff_print = 0;
+    int    buff_print = 0;
 
     ft_term_move_cursor_down(&shell->terminal);     /* Positionne le curseur au début de la ligne suivante */
     ft_term_clear_line_and_under(&shell->terminal); /* Efface la ligne courante et celles du dessous */
@@ -238,7 +214,7 @@ static void historic_print_info(debug_t *dbg, t_shell *shell)
     }
     if (cmd->prev == NULL)
     {
-        cmd = cmd->next;
+        cmd      = cmd->next;
         hist_pos = 1;
     }
     /* Affichage de l'historique */
@@ -256,62 +232,62 @@ static void historic_print_info(debug_t *dbg, t_shell *shell)
     /* Affichage du buffer */
     if (buff_print >= shell->terminal.max_column)
     {
-        buff_print = write(STDOUT_FILENO, buff, (size_t) shell->terminal.max_column - 3);
+        buff_print = (int) write(STDOUT_FILENO, buff, (size_t) shell->terminal.max_column - 4);
         write(STDOUT_FILENO, " ...", 4);
     }
     else
     {
-        buff_print = write(STDOUT_FILENO, buff, (size_t) buff_print);
+        buff_print = (int) write(STDOUT_FILENO, buff, (size_t) buff_print);
     }
-    get_lines_printed(dbg, buff_print, &shell->terminal);
+    add_lines_printed(dbg, buff_print, &shell->terminal);
 }
 
 static void cursor_print_info(debug_t *dbg, t_shell *shell)
 {
-    long buff_print = 0;
-    int  line       = 0;
+    int buff_print = 0;
+    int line       = 0;
 
     ft_term_move_cursor_down(&shell->terminal);     /* Positionne le curseur au début de la ligne suivante */
     ft_term_clear_line_and_under(&shell->terminal); /* Efface la ligne courante et celles du dessous */
     line = shell->terminal.start.line;
     if (shell->terminal.end.line + dbg->lines_printed + 3 > shell->terminal.max_line)
     {
-        line -= ((shell->terminal.end.line + (int) dbg->lines_printed + 3) - shell->terminal.max_line);
+        line -= ((shell->terminal.end.line + dbg->lines_printed + 3) - shell->terminal.max_line);
     }
     buff_print = ft_printf("command Start : Line(\033[36m%d\033[0m/%d) Col(\033[36m%d\033[0m/%d)",
                            line,
                            shell->terminal.max_line,
                            shell->terminal.start.column,
                            shell->terminal.max_column);
-    get_lines_printed(dbg, buff_print, &shell->terminal);
+    add_lines_printed(dbg, buff_print, &shell->terminal);
 
     ft_term_move_cursor_down(&shell->terminal);     /* Positionne le curseur au début de la ligne suivante */
     ft_term_clear_line_and_under(&shell->terminal); /* Efface la ligne courante et celles du dessous */
     line = shell->terminal.current.line;
     if (shell->terminal.end.line + dbg->lines_printed + 2 > shell->terminal.max_line)
     {
-        line -= ((shell->terminal.end.line + (int) dbg->lines_printed + 2) - shell->terminal.max_line);
+        line -= ((shell->terminal.end.line + dbg->lines_printed + 2) - shell->terminal.max_line);
     }
     buff_print = ft_printf("Cursor Current: Line(\033[36m%d\033[0m/%d) Col(\033[36m%d\033[0m/%d)",
                            line,
                            shell->terminal.max_line,
                            shell->terminal.current.column,
                            shell->terminal.max_column);
-    get_lines_printed(dbg, buff_print, &shell->terminal);
+    add_lines_printed(dbg, buff_print, &shell->terminal);
 
     ft_term_move_cursor_down(&shell->terminal);     /* Positionne le curseur au début de la ligne suivante */
     ft_term_clear_line_and_under(&shell->terminal); /* Efface la ligne courante et celles du dessous */
     line = shell->terminal.current.line;
     if (shell->terminal.end.line + dbg->lines_printed + 1 > shell->terminal.max_line)
     {
-        line -= ((shell->terminal.end.line + (int) dbg->lines_printed + 1) - shell->terminal.max_line);
+        line -= ((shell->terminal.end.line + dbg->lines_printed + 1) - shell->terminal.max_line);
     }
     buff_print = ft_printf("Command End   : Line(\033[36m%d\033[0m/%d) Col(\033[36m%d\033[0m/%d)",
                            line,
                            shell->terminal.max_line,
                            shell->terminal.end.column,
                            shell->terminal.max_column);
-    get_lines_printed(dbg, buff_print, &shell->terminal);
+    add_lines_printed(dbg, buff_print, &shell->terminal);
 }
 
 void debug_command_line(const uint8_t *buf, long ret, t_shell *shell)

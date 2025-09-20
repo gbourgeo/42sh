@@ -299,14 +299,18 @@ static size_t can_form_an_expansion(t_token      **token,
 
 static int is_end_of_input(const uint8_t *start, const uint8_t *end_of_input)
 {
-    if (end_of_input == NULL || end_of_input[0] == '\0')
+    if (start[0] == '\0' || end_of_input[0] == '\0')
     {
         return (0);
     }
     return (ft_memcmp(start, end_of_input, ft_ustrlen(end_of_input)) == 0);
 }
 
-size_t ft_token_recognition(t_token **token, const uint8_t *command, const uint8_t *end_of_input, const uint8_t *ifs)
+size_t ft_token_recognition(
+    t_token      **token,
+    const uint8_t *command,
+    const uint8_t *end_of_input,
+    const uint8_t *ifs)
 {
     t_token     **current_token = token;
     size_t        iter          = 0;
