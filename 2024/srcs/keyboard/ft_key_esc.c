@@ -34,8 +34,6 @@ void ft_clear_modes(t_shell *shell)
     if (print == 1)
     {
         /* Réaffichage de la commande */
-        ft_shell_command_print(shell->command,
-                               &shell->terminal,
-                               UINT32(COMMAND_PRINT_FROM_START));
+        ft_shell_command_print(shell->command, &shell->terminal, COMMAND_PRINT_FROM_START);
     }
 }

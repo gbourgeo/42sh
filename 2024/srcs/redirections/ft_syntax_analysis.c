@@ -33,7 +33,7 @@ static int ft_pipes_analysis(char **args)
                 || (args[i][0] == '>' && ft_check_redirect_right(args, i))
                 || (args[i][0] == '|' && ft_check_redirect_pipe(args, i)))
             {
-                ft_log(SH_LOG_LEVEL_WARN, "parse error near `%s'", args[i]);
+                ft_shell_log(SH_LOG_LEVEL_WARN, "parse error near `%s'", args[i]);
                 return (1);
             }
         }
@@ -60,7 +60,7 @@ int ft_syntax_analysis(char **args)
                 || (ft_strchr(args[i], ';') && ft_check_semi_colon(args, i))
                 || (ft_strstr(args[i], "&&") && ft_check_double_and(args, i)))
             {
-                ft_log(SH_LOG_LEVEL_WARN, "parse error near `%s'", args[i]);
+                ft_shell_log(SH_LOG_LEVEL_WARN, "parse error near `%s'", args[i]);
                 return (1);
             }
         }

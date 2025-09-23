@@ -37,15 +37,21 @@ enum
 };
 
 /**
- * @brief Options de la position du curseur
+ * @brief Options de déplacement du curseur
  */
-enum e_terminal_cursor_position
+typedef enum e_terminal_cursor_position
 {
-    MOVE_CURSOR_START   = 0x01, // 0000 0001
-    MOVE_CURSOR_CURRENT = 0x02, // 0000 0010
-    MOVE_CURSOR_END     = 0x04, // 0000 0100
-    CHANGE_CURRENT      = 0x08, // 0000 1000
-};
+    MOVE_CURSOR_START   = 1,
+    MOVE_CURSOR_CURRENT = 2,
+    MOVE_CURSOR_END     = 3,
+    // CHANGE_CURRENT      = 0x08, // 0000 1000
+} e_cursormove;
+
+typedef enum e_terminal_cursor_set
+{
+    SET_CURSOR_CURRENT = 0,
+    SET_CURSOR_ALL     = 1,
+} e_cursorset;
 
 typedef struct _align(8) s_cursor_position
 {
@@ -77,7 +83,7 @@ void ft_shell_terminal_init(t_term *terminal);
  * @param terminal Structure interne Terminal
  * @param options Options du terminal
  */
-void ft_shell_terminal_clear(t_term *terminal, unsigned int options);
+void ft_shell_terminal_clear(const t_term *terminal, unsigned int options);
 
 /**
  * @brief Récupère les dimensions du terminal (lignes et colonnes).
@@ -86,11 +92,14 @@ void ft_shell_terminal_clear(t_term *terminal, unsigned int options);
 void ft_shell_terminal_get_size(t_term *terminal);
 
 /**
- * @brief Récupère la position du curseur dans le terminal.
+ * @brief Sauvegarde la position du curseur dans le terminal.
+ *
+ * Option disponible: SET_CURSOR_CURRENT, SET_CURSOR_ALL.
+ *
  * @param terminal Structure interne Terminal
- * @param option Options de sauvegarde de la position
+ * @param option Option de sauvegarde de la position
  */
-void ft_shell_terminal_get_cursor_position(t_term *terminal, uint32_t options);
+void ft_shell_terminal_get_cursor_position(t_term *terminal, e_cursorset option);
 
 /**
  * @brief Récupère la position du curseur à la position courante de commande
@@ -133,77 +142,81 @@ void ft_shell_terminal_calc_end_command_position(t_term *terminal,
  * - "mr", "rev" : Active le mode surlignage (reverse video)
  *
  * - "nw", "nel" : Déplace le curseur au début de la ligne suivante
- * @param shell     Structure interne du shell
+ * @param terminal Structure interne Terminal
+ * @param term Nom du terminal (variable d'environnement TERM)
  * @return 0 OK, 1 autrement.
  */
-int ft_shell_terminal_load_termcaps(t_term *terminal, void *shell_ctx);
+int ft_shell_terminal_load_termcaps(t_term *terminal, const char *term);
 
 /**
  * @brief Fonction de chargement des nouveaux attributs du terminal.
- * @param shell Structure interne du shell
+ * @param terminal Structure interne Terminal
  * @return 0 OK, 1 autrement.
  */
-int ft_shell_terminal_change_attributes(t_term *terminal);
+int ft_shell_terminal_change_attributes(const t_term *terminal);
 
 /**
  * @brief Fonction de restoration des attributs du terminal.
- * @param shell Structure interne du shell
+ * @param terminal Structure interne Terminal
  */
-void ft_shell_terminal_restore_attributes(t_term *terminal);
+void ft_shell_terminal_restore_attributes(const t_term *terminal);
 
 /**
  * @brief Efface la ligne et celles sous le curseur
- * @param shell Structure interne du shell
+ * @param terminal Structure interne Terminal
  */
-void ft_term_clear_line_and_under(t_term *terminal);
+void ft_term_clear_line_and_under(const t_term *terminal);
 
 /**
  * @brief Efface du curseur jusqu'à la fin de la ligne et celles en dessous.
- * @param shell Structure interne du shell
+ * @param terminal Structure interne Terminal
  */
-void ft_term_clear_cursor_and_under(t_term *terminal);
+void ft_term_clear_cursor_and_under(const t_term *terminal);
 
 /**
  * @brief Déplace le curseur du terminal suivant une position définie.
- * @param shell Structure interne du shell
- * @param options Options de déplacement (cf. e_terminal_cursor_position)
+ *
+ * Position possible: MOVE_CURSOR_START, MOVE_CURSOR_CURRENT, MOVE_CURSOR_END.
+ *
+ * @param terminal Structure interne Terminal
+ * @param move Options de déplacement (cf. e_terminal_cursor_position)
  */
-void ft_term_move_cursor(t_term *terminal, uint32_t options);
+void ft_term_move_cursor(const t_term *terminal, e_cursormove move);
 
 /**
  * @brief Efface 1 caractère sous la position du curseur.
- * @param shell Structure interne du shell
+ * @param terminal Structure interne Terminal
  */
-void ft_term_remove_char(t_term *terminal);
+void ft_term_remove_char(const t_term *terminal);
 
 /**
  * @brief Désactive le mode insertion.
- * @param shell Structure interne du shell
+ * @param terminal Structure interne Terminal
  */
-void ft_term_insert_mode_off(t_term *terminal);
+void ft_term_insert_mode_off(const t_term *terminal);
 
 /**
  * @brief Active le mode insertion.
- * @param shell Structure interne du shell
+ * @param terminal Structure interne Terminal
  */
-void ft_term_insert_mode_on(t_term *terminal);
+void ft_term_insert_mode_on(const t_term *terminal);
 
 /**
  * @brief Désactive tous les modes actifs.
- * @param shell Structure interne du shell
+ * @param terminal Structure interne Terminal
  */
-void ft_term_clear_modes(t_term *terminal);
+void ft_term_clear_modes(const t_term *terminal);
 
 /**
  * @brief Active le mode surlignage (reverse video).
- * @param shell Structure interne du shell
+ * @param terminal Structure interne Terminal
  */
-void ft_term_highlight_mode_on(t_term *terminal);
+void ft_term_highlight_mode_on(const t_term *terminal);
 
 /**
  * @brief Déplace le curseur au début de la ligne suivante.
- * @param shell Structure interne du shell
+ * @param terminal Structure interne Terminal
  */
-void ft_term_move_cursor_down(t_term *terminal);
+void ft_term_move_cursor_down(const t_term *terminal);
 
 #endif /* _FT_SHELL_TERMINAL_H_ */

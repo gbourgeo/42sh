@@ -41,7 +41,7 @@ static size_t ft_key_special(const uint8_t *buffer, size_t iter, size_t size, t_
         { { 0x03 },                               1, ft_control_c                     }, /* Ctrl + C             */
         { { 0x04 },                               1, ft_control_d                     }, /* Ctrl + D             */
         { { 0x08 },                               1, ft_delete_word_left              }, /* Ctrl + Backspace     */
-        { { 0x0A },                               1, ft_shell_command_exec            }, /* Enter                */
+        { { 0x0A },                               1, ft_shell_exec_command            }, /* Enter                */
         { { 0x0C },                               1, ft_highlight_mode                }, /* Ctrl + L             */
         { { 0x10 },                               1, ft_highlight_paste               }, /* Ctrl + P             */
         { { 0x19 },                               1, ft_highlight_yank                }, /* Ctrl + Y             */
@@ -117,7 +117,7 @@ void ft_key_analyser(const uint8_t *buffer, size_t len, t_shell *shell)
         {
             ft_shell_terminal_calc_current_command_position(&shell->terminal, shell->command->pos);
             ft_shell_terminal_calc_end_command_position(&shell->terminal, shell->command->len);
-            ft_shell_command_print(shell->command, &shell->terminal, UINT32(COMMAND_PRINT_FROM_POS_LESS));
+            ft_shell_command_print(shell->command, &shell->terminal, COMMAND_PRINT_FROM_POS_LESS);
         }
         iter++;
     }

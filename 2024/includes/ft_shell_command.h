@@ -57,13 +57,12 @@ typedef enum change_historic_value_e
     COMMAND_HISTORIC_MODIFIED = 0x02, // 0000 0010
 } histval_e;
 
-enum command_print_option_e
+typedef enum command_print_option_e
 {
-    COMMAND_PRINT_FROM_START      = 0x01, // 0000 0001
-    COMMAND_PRINT_FROM_POS        = 0x02, // 0000 0010
-    COMMAND_PRINT_FROM_POS_LESS   = 0x04, // 0000 0100
-    COMMAND_PRINT_SET_CURSOR_END  = 0x08, // 0000 1000
-};
+    COMMAND_PRINT_FROM_START     = 0x01, // 0000 0001
+    COMMAND_PRINT_FROM_POS       = 0x02, // 0000 0010
+    COMMAND_PRINT_FROM_POS_LESS  = 0x04, // 0000 0100
+} e_printopt;
 
 /**
  * Zone de commande surlignée.
@@ -98,23 +97,23 @@ typedef struct _align(128) s_command
 
 /**
  * @brief Supprime la liste de commande.
- * @param[in] command Structure de commande
+ * @param[in] command_list Structure de commande
  */
 void ft_shell_command_delete_list(t_cmd *command_list);
 
 /**
  * Retourne le premier élément de la liste de commandes.
- * @param command Liste de commande
+ * @param command_list Liste de commande
  * @return Le premier élément de la liste.
  */
-t_cmd *ft_shell_command_get_first(t_cmd *command_list);
+t_cmd *ft_shell_command_get_first(const t_cmd *command_list);
 
 /**
  * @brief Retourne le dernier élément de la liste de commandes.
- * @param historic Lisie de commande
+ * @param command_list Lisie de commande
  * @return Le dernier élément de la liste.
  */
-t_cmd *ft_shell_command_get_last(t_cmd *command_list);
+t_cmd *ft_shell_command_get_last(const t_cmd *command_list);
 
 /**
  * @brief Change la position de la commande. Options valides:
@@ -128,7 +127,7 @@ t_cmd *ft_shell_command_get_last(t_cmd *command_list);
  * @param operation Operation à effectuer
  * @param terminal Structure du terminal
  */
-void ft_command_change_pos(t_cmd  *command, size_t newval, e_posop operation, t_term *terminal);
+void ft_command_change_pos(t_cmd *command, size_t newval, e_posop operation, t_term *terminal);
 
 /**
  * @brief Fonction d'insertion d'un caractère dans le buffer de la commande
@@ -137,6 +136,29 @@ void ft_command_change_pos(t_cmd  *command, size_t newval, e_posop operation, t_
  * @param[in] charac Caractère à insérer dans la commande
  */
 void ft_shell_command_insert_character(t_cmd *command, uint8_t charac);
+
+/**
+ * @brief Fonction de deboggage du Shell. Affiche les informations suivantes:
+ *
+ * - 1ère ligne: Ligne (actuelle/totale), Colonne (actuelle/totale), highlight
+ * (activé/désactivé), Position du curseur dans la ligne de commande, Longueur
+ * du Prompt.
+ *
+ * - 2nd ligne : Si non NULL, affiche les caractères du buffer passé en
+ * paramètre au format hexadécimal.
+ *
+ * - 3ème ligne: Affiche le zones de textes surlignées.
+ *
+ * - 4ème ligne: Affiche la ligne de commande courante du Shell.
+ *
+ * - 5ème ligne: Affiche la ligne de commande sauvegardée.
+ *
+ * - 6ème ligne: Affiche l'historique de commandes sur une seule ligne.
+ *
+ * @param buffer Buffer de STDIN ou FILE
+ * @param size Taille du buffer
+ */
+void ft_shell_command_debug(const uint8_t *buf, long size);
 
 /**
  * @brief Supprime un caractère à la position du buffer de la commande.
@@ -149,21 +171,14 @@ void ft_shell_command_delete_character(t_cmd *command, e_cmdop operation, size_t
 /**
  * @brief Fonction d'affichage de la commande sur la sortie standard depuis le début.
  *
- * Options disponibles (cumulables):
- *
- * - COMMAND_PRINT_FROM_START       Réécrit la commande depuis le début,
- *
- * - COMMAND_PRINT_FROM_POS         Réécrit la commande depuis la position dans la commande,
- *
- * - COMMAND_PRINT_FROM_POS_LESS    Réécrit la commande depuis la position - 1 dans la commande,
- *
- * - COMMAND_PRINT_SET_CURSOR_END   Positionne le curseur en fin de commande
+ * Options disponibles (cumulables): COMMAND_PRINT_FROM_START, COMMAND_PRINT_FROM_POS,
+ * COMMAND_PRINT_FROM_POS_LESS.
  *
  * @param[in] command Structure de commande
  * @param[in] terminal Structure de terminal
  * @param[in] options Options d'affichage
  */
-void ft_shell_command_print(t_cmd *command, t_term *terminal, uint32_t options);
+void ft_shell_command_print(const t_cmd *command, const t_term *terminal, e_printopt option);
 
 /**
  * @brief Création d'une nouvelle commande avec vol ou duplication de la ligne
@@ -176,6 +191,13 @@ void ft_shell_command_print(t_cmd *command, t_term *terminal, uint32_t options);
 t_cmd *ft_shell_command_new(const uint8_t *line,
                             t_cmd         *command_list,
                             e_newcmdopt    option);
+
+/**
+ * @brief Parsing de la commande en cours.
+ * @param[in] command Structure d'une commande
+ * @param[in] ifs Caractère(s) de séparation de commande
+ */
+void ft_shell_command_parse(const t_cmd *command, const char *ifs);
 
 /**
  * @brief Agrandit le buffer d'une commande, copie l'ancien buffer dans le nouveau
@@ -245,7 +267,7 @@ t_higharea *ft_highlight_remove_all(t_higharea *harea);
  * @param harea Liste des zones surlignées
  * @return Premier élément de la liste.
  */
-t_higharea *ft_highlight_first(t_higharea *harea);
+t_higharea *ft_highlight_first(const t_higharea *harea);
 
 /**
  * @brief Fonction de réarrangement des zones surlignées.

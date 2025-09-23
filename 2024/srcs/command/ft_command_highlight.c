@@ -31,7 +31,7 @@ t_higharea *ft_highlight_remove_all(t_higharea *harea)
     return (NULL);
 }
 
-t_higharea *ft_highlight_first(t_higharea *harea)
+t_higharea *ft_highlight_first(const t_higharea *harea)
 {
     if (harea != NULL)
     {
@@ -40,7 +40,7 @@ t_higharea *ft_highlight_first(t_higharea *harea)
             harea = harea->prev;
         }
     }
-    return (harea);
+    return ((t_higharea *) harea);
 }
 
 t_higharea *ft_highlight_sort_area(t_higharea *harea)

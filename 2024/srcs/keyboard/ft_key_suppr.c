@@ -37,7 +37,7 @@ void ft_delete_character_right(t_shell *shell)
         if (TEST_BIT(shell->options, SHELL_INTERACTIVE_MODE))
         {
             ft_shell_terminal_calc_end_command_position(&shell->terminal, command->len);
-            ft_shell_command_print(shell->command, &shell->terminal, UINT32(COMMAND_PRINT_FROM_POS));
+            ft_shell_command_print(shell->command, &shell->terminal, COMMAND_PRINT_FROM_POS);
         }
     }
 }
@@ -61,7 +61,7 @@ void ft_delete_character_left(t_shell *shell)
             ft_shell_terminal_calc_current_command_position(&shell->terminal, command->pos);
             ft_shell_terminal_calc_end_command_position(&shell->terminal, command->len);
             ft_term_move_cursor(&shell->terminal, MOVE_CURSOR_CURRENT);
-            ft_shell_command_print(shell->command, &shell->terminal, UINT32(COMMAND_PRINT_FROM_POS));
+            ft_shell_command_print(shell->command, &shell->terminal, COMMAND_PRINT_FROM_POS);
         }
     }
 }
@@ -98,7 +98,7 @@ void ft_delete_word_right(t_shell *shell)
             ft_shell_terminal_calc_current_command_position(&shell->terminal, command->pos);
             ft_shell_terminal_calc_end_command_position(&shell->terminal, command->len);
             ft_term_move_cursor(&shell->terminal, MOVE_CURSOR_CURRENT);
-            ft_shell_command_print(shell->command, &shell->terminal, UINT32(COMMAND_PRINT_FROM_POS));
+            ft_shell_command_print(shell->command, &shell->terminal, COMMAND_PRINT_FROM_POS);
         }
     }
 }
@@ -136,7 +136,7 @@ void ft_delete_word_left(t_shell *shell)
             ft_shell_terminal_calc_current_command_position(&shell->terminal, command->pos);
             ft_shell_terminal_calc_end_command_position(&shell->terminal, command->len);
             ft_term_move_cursor(&shell->terminal, MOVE_CURSOR_CURRENT);
-            ft_shell_command_print(shell->command, &shell->terminal, UINT32(COMMAND_PRINT_FROM_POS));
+            ft_shell_command_print(shell->command, &shell->terminal, COMMAND_PRINT_FROM_POS);
         }
     }
 }

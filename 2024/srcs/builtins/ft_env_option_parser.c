@@ -90,7 +90,7 @@ static int ft_env_u_handler(
         return (1);
     }
     /* Pas d'argument */
-    ft_log(SH_LOG_LEVEL_WARN,
+    ft_shell_log(SH_LOG_LEVEL_WARN,
            "%s: option needs argument -- %c\nuse \" %1$s --help \" for more informations",
            env->builtin_name,
            *arg);
@@ -127,7 +127,7 @@ static int ft_env_c_handler(
         return (1);
     }
     /* Pas d'argument */
-    ft_log(SH_LOG_LEVEL_WARN,
+    ft_shell_log(SH_LOG_LEVEL_WARN,
            "%s: option needs argument -- %c\nuse \" %1$s --help \" for more informations",
            env->builtin_name,
            *arg);
@@ -178,7 +178,7 @@ static int ft_env_dash_handler(
 {
     if (pos != 1) /* Pas le premier caractère */
     {
-        ft_log(SH_LOG_LEVEL_WARN,
+        ft_shell_log(SH_LOG_LEVEL_WARN,
                "%s: illegal option -- %c\nuse \" %1$s --help \" for more informations",
                env->builtin_name,
                *arg);
@@ -194,7 +194,7 @@ static int ft_env_dash_handler(
         ASSIGN_BIT(env->option, ENV_PRINT_HELP);
         return (0);
     }
-    ft_log(SH_LOG_LEVEL_WARN,
+    ft_shell_log(SH_LOG_LEVEL_WARN,
            "%s: unrecognised option -- -%s\nuse \" %1$s --help \" for more informations",
            env->builtin_name,
            arg);
@@ -220,7 +220,7 @@ int ft_env_option_parser(t_shell *shell, t_builtin_env *env, const char **args, 
     env->cpy = ft_tabdup((const char **) shell->global_env);
     if (env->cpy == NULL)
     {
-        ft_log(SH_LOG_LEVEL_ERR,
+        ft_shell_log(SH_LOG_LEVEL_ERR,
                "%s: global environment duplication failed.",
                env->builtin_name);
         return (-1);
@@ -250,7 +250,7 @@ int ft_env_option_parser(t_shell *shell, t_builtin_env *env, const char **args, 
             }
             if (iopt == sizeof(options) / sizeof(options[0])) /* Mauvaise option */
             {
-                ft_log(SH_LOG_LEVEL_WARN,
+                ft_shell_log(SH_LOG_LEVEL_WARN,
                        "%s: illegal option -- %c\nuse \" %1$s --help \" for more informations",
                        env->builtin_name,
                        arg[iarg]);
@@ -290,7 +290,7 @@ int ft_env_option_parser(t_shell *shell, t_builtin_env *env, const char **args, 
     //         {
     //             if (args[iter][jter + 1] == '\0' && args[iter + 1] == NULL)
     //             {
-    //                 ft_log(SH_LOG_LEVEL_WARN, "%s: option needs argument -- %c", args[0], args[iter][jter]);
+    //                 ft_shell_log(SH_LOG_LEVEL_WARN, "%s: option needs argument -- %c", args[0], args[iter][jter]);
     //                 ft_dprintf(STDERR_FILENO, "use \" %s --help \" for more informations\n", args[0]);
     //                 return (1);
     //             }
@@ -309,7 +309,7 @@ int ft_env_option_parser(t_shell *shell, t_builtin_env *env, const char **args, 
     //         {
     //             if (args[iter][jter + 1] == '\0' && args[iter + 1] == NULL)
     //             {
-    //                 ft_log(SH_LOG_LEVEL_WARN, "%s: option needs argument -- %c", args[0], args[iter][jter]);
+    //                 ft_shell_log(SH_LOG_LEVEL_WARN, "%s: option needs argument -- %c", args[0], args[iter][jter]);
     //                 ft_dprintf(STDERR_FILENO, "use \" %s --help \" for more informations\n", args[0]);
     //                 return (1);
     //             }
@@ -332,7 +332,7 @@ int ft_env_option_parser(t_shell *shell, t_builtin_env *env, const char **args, 
     //         {
     //             if (jter != 1)
     //             {
-    //                 ft_log(SH_LOG_LEVEL_WARN, "%s: illegal option -- %c", args[0], args[iter][jter]);
+    //                 ft_shell_log(SH_LOG_LEVEL_WARN, "%s: illegal option -- %c", args[0], args[iter][jter]);
     //                 ft_dprintf(STDERR_FILENO, "use \" %s --help \" for more informations\n", args[0]);
     //                 return (1);
     //             }
@@ -345,13 +345,13 @@ int ft_env_option_parser(t_shell *shell, t_builtin_env *env, const char **args, 
     //                 ASSIGN_BIT(env->option, ENV_PRINT_HELP);
     //                 return (0);
     //             }
-    //             ft_log(SH_LOG_LEVEL_WARN, "%s: unrecognised option -- %s", args[0], args[iter]);
+    //             ft_shell_log(SH_LOG_LEVEL_WARN, "%s: unrecognised option -- %s", args[0], args[iter]);
     //             ft_dprintf(STDERR_FILENO, "use \" %s --help \" for more informations\n", args[0]);
     //             return (1);
     //         }
     //         else
     //         {
-    //             ft_log(SH_LOG_LEVEL_WARN, "%s: illegal option -- %c", args[0], args[iter][jter]);
+    //             ft_shell_log(SH_LOG_LEVEL_WARN, "%s: illegal option -- %c", args[0], args[iter][jter]);
     //             ft_dprintf(STDERR_FILENO, "Use \" %s --help \" for more informations\n", args[0]);
     //             return (1);
     //         }

@@ -36,7 +36,7 @@ void ft_exit(const char **args, t_shell *shell)
     }
     if (args[2])
     {
-        ft_log(SH_LOG_LEVEL_WARN, "%s: too many arguments.", args[0]);
+        ft_shell_log(SH_LOG_LEVEL_WARN, "%s: too many arguments.", args[0]);
         return;
     }
     /* Vérification du paramètre (contenant que des digits) */
@@ -44,7 +44,7 @@ void ft_exit(const char **args, t_shell *shell)
     {
         if (!ft_isdigit(args[1][iter]))
         {
-            ft_log(SH_LOG_LEVEL_ERR, "%s: Non numeric value detected.", args[0]);
+            ft_shell_log(SH_LOG_LEVEL_ERR, "%s: Non numeric value detected.", args[0]);
             shell->status = 255;
             ft_real_exit(shell);
             return;

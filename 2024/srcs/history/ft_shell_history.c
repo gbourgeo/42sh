@@ -54,13 +54,13 @@ size_t ft_shell_history_parse_file(t_cmd      **command,
     filed             = open(path, O_CREAT | O_RDONLY | O_CLOEXEC, 0644);
     if (filed < 0)
     {
-        ft_log(SH_LOG_LEVEL_WARN,
+        ft_shell_log(SH_LOG_LEVEL_WARN,
                "Error opening historic file %s: %s",
                path,
                strerror(errno));
         return (0);
     }
-    ft_log(SH_LOG_LEVEL_DBG, "Parsing history file %s", path);
+    ft_shell_log(SH_LOG_LEVEL_DBG, "Parsing history file %s", path);
     /* Parsing du fichier: une ligne == une commande */
     *command = NULL;
     while (get_next_line(filed, (char **) &line) > 0)
@@ -73,7 +73,7 @@ size_t ft_shell_history_parse_file(t_cmd      **command,
                                           history->max_size,
                                           SHELL_COMMAND_SAVE_FROM_HISTORIC);
     }
-    ft_log(SH_LOG_LEVEL_DBG,
+    ft_shell_log(SH_LOG_LEVEL_DBG,
            "Added %ld line%c to historic (max %ld)",
            hist_size,
            (hist_size < 2) ? '\0' : 's',
@@ -82,41 +82,41 @@ size_t ft_shell_history_parse_file(t_cmd      **command,
     return (hist_size);
 }
 
-void ft_shell_history_save_to_file(t_hist *history, t_cmd *historic)
+void ft_shell_history_save_to_file(const t_hist *history, const t_cmd *command)
 {
     int    filed  = 0;
     size_t cmd_nb = 0;
 
-    if (historic == NULL)
+    if (command == NULL)
     {
         return;
     }
     if (history->filepath == NULL)
     {
-        ft_log(SH_LOG_LEVEL_WARN, "Command historic cannot be saved, no historic file specified.");
+        ft_shell_log(SH_LOG_LEVEL_WARN, "Command historic cannot be saved, no historic file specified.");
         return;
     }
     /* Ouverture du fichier d'historique */
     filed = open(history->filepath, O_CREAT | O_TRUNC | O_WRONLY | O_CLOEXEC, 0644);
     if (filed < 0)
     {
-        ft_log(SH_LOG_LEVEL_ERR,
+        ft_shell_log(SH_LOG_LEVEL_ERR,
                "Error opening historic file %s: %s",
                history->filepath,
                strerror(errno));
         return;
     }
     /* Départ de la fin de l'historique */
-    historic = ft_shell_command_get_last(historic);
-    while (historic->prev != NULL)
+    command = ft_shell_command_get_last(command);
+    while (command->prev != NULL)
     {
-        write(filed, historic->buffer, historic->len);
+        write(filed, command->buffer, command->len);
         write(filed, "\n", 1);
         cmd_nb++;
-        historic = historic->prev;
+        command = command->prev;
     }
     /* Debug */
-    ft_log(SH_LOG_LEVEL_DBG,
+    ft_shell_log(SH_LOG_LEVEL_DBG,
            "Saved %ld line%c to historic file %s",
            cmd_nb,
            (cmd_nb < 2) ? '\0' : 's',

@@ -35,7 +35,7 @@ void ft_shell_history_init(t_hist *history);
 /**
  * Initialise un contexte d'historique de commandes à partir d'un fichier.
  * @param command Pointeur sur la première commande
- * @param history Contexte de l'historique du Shell
+ * @param history Contexte de l'Historique du Shell
  * @param progname Nom du programme
  * @param environ Environnement du Shell
  * @return Dernière commande de la liste de commande
@@ -47,9 +47,9 @@ size_t ft_shell_history_parse_file(t_cmd       **command,
 
 /**
  * @brief Sauveagrde l'historique dans le fichier d'hitosique du Shell
- * @param history Contexte de l'historique du Shell
- * @param historic Liste de commandes
+ * @param history Contexte de l'Historique du Shell
+ * @param command Liste de commandes
  */
-void ft_shell_history_save_to_file(t_hist *history, t_cmd *historic);
+void ft_shell_history_save_to_file(const t_hist *history, const t_cmd *command);
 
 #endif /* _FT_SHELL_HISTORY_H_ */

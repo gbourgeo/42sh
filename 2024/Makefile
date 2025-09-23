@@ -20,20 +20,19 @@ COMMAND_DIR     = $(SRC_DIR)command/
 HIGHLIGHT_DIR   = $(SRC_DIR)highlight/
 HISTORY_DIR     = $(SRC_DIR)history/
 KEYBOARD_DIR    = $(SRC_DIR)keyboard/
+LOG_DIR         = $(SRC_DIR)log/
 PIPEX_DIR       = $(SRC_DIR)pipex/
 PROMPT_DIR      = $(SRC_DIR)prompt/
 REDIRECTION_DIR = $(SRC_DIR)redirections/
 SHELL_DIR       = $(SRC_DIR)shell/
 TERMINAL_DIR    = $(SRC_DIR)terminal/
+TOKEN_DIR       = $(SRC_DIR)token/
 
 # Files
 SRC = ft_check_and_exec.c            \
-	ft_debug.c                       \
 	ft_fork.c                        \
 	ft_frees.c                       \
-	ft_get_path.c                    \
-	ft_log.c                         \
-	ft_shell.c
+	ft_get_path.c
 
 BUILTINS_SRC = ft_cd.c               \
 			ft_cd_check.c            \
@@ -48,6 +47,8 @@ BUILTINS_SRC = ft_cd.c               \
 			ft_unsetenv.c
 
 COMMAND_SRC = ft_command_highlight.c \
+			ft_shell_command_debug.c \
+			ft_shell_command_parse.c \
 			ft_shell_command.c
 
 HIGHLIGHT_SRC = ft_highlight_mode.c  \
@@ -64,6 +65,8 @@ KEYBOARD_SRC = ft_key_analyser.c     \
 			 ft_key_suppr.c
 #			 ft_key_shift.c
 
+LOG_SRC = ft_shell_log.c
+
 PROMPT_SRC = ft_shell_prompt.c
 
 PIPEX_SRC = ft_pipe_left.c           \
@@ -73,20 +76,22 @@ PIPEX_SRC = ft_pipe_left.c           \
 
 REDIRECTION_SRC = ft_argsnew.c       \
 		ft_lexical_analysis.c        \
-		ft_token.c                   \
 		ft_pipes_errors.c            \
 		ft_separators_errors.c       \
 		ft_syntax_analysis.c
 
 SHELL_SRC = ft_shell_args_exec.c     \
 			ft_shell_args_parse.c    \
-			ft_shell_command_exec.c  \
-			ft_shell_command_parse.c \
+			ft_shell_exec_command.c  \
 			ft_shell_exit.c          \
 			ft_shell_init.c          \
+			ft_shell_main.c          \
 			ft_shell_loop.c
 
 TERMINAL_SRC = ft_shell_terminal.c
+
+TOKEN_SRC = ft_shell_token.c         \
+			ft_shell_token_debug.c
 
 # Objects
 OBJ_DIR = obj/
@@ -96,12 +101,13 @@ SRC_OBJ += $(addprefix $(OBJ_DIR), $(COMMAND_SRC:.c=.o))
 SRC_OBJ += $(addprefix $(OBJ_DIR), $(HIGHLIGHT_SRC:.c=.o))
 SRC_OBJ += $(addprefix $(OBJ_DIR), $(HISTORY_SRC:.c=.o))
 SRC_OBJ += $(addprefix $(OBJ_DIR), $(KEYBOARD_SRC:.c=.o))
+SRC_OBJ += $(addprefix $(OBJ_DIR), $(LOG_SRC:.c=.o))
 SRC_OBJ += $(addprefix $(OBJ_DIR), $(PIPEX_SRC:.c=.o))
 SRC_OBJ += $(addprefix $(OBJ_DIR), $(PROMPT_SRC:.c=.o))
 SRC_OBJ += $(addprefix $(OBJ_DIR), $(REDIRECTION_SRC:.c=.o))
 SRC_OBJ += $(addprefix $(OBJ_DIR), $(SHELL_SRC:.c=.o))
 SRC_OBJ += $(addprefix $(OBJ_DIR), $(TERMINAL_SRC:.c=.o))
-SRC_OBJ += $(addprefix $(OBJ_DIR), $(LIBFT2_SRC:.c=.o))
+SRC_OBJ += $(addprefix $(OBJ_DIR), $(TOKEN_SRC:.c=.o))
 
 # Compilation
 CC = clang
@@ -159,6 +165,10 @@ $(OBJ_DIR)%.o: $(KEYBOARD_DIR)%.c
 	@$(CC) $(CFLAGS) -MMD -o $@ -c $< $(INCLUDES) $(ENV)
 	@/bin/echo -n "."
 
+$(OBJ_DIR)%.o: $(LOG_DIR)%.c
+	@$(CC) $(CFLAGS) -MMD -o $@ -c $< $(INCLUDES) $(ENV)
+	@/bin/echo -n "."
+
 $(OBJ_DIR)%.o: $(PIPEX_DIR)%.c
 	@$(CC) $(CFLAGS) -MMD -o $@ -c $< $(INCLUDES) $(ENV)
 	@/bin/echo -n "."
@@ -176,6 +186,10 @@ $(OBJ_DIR)%.o: $(SHELL_DIR)%.c
 	@/bin/echo -n "."
 
 $(OBJ_DIR)%.o: $(TERMINAL_DIR)%.c
+	@$(CC) $(CFLAGS) -MMD -o $@ -c $< $(INCLUDES) $(ENV)
+	@/bin/echo -n "."
+
+$(OBJ_DIR)%.o: $(TOKEN_DIR)%.c
 	@$(CC) $(CFLAGS) -MMD -o $@ -c $< $(INCLUDES) $(ENV)
 	@/bin/echo -n "."
 
@@ -204,7 +218,7 @@ debug:
 debug: CFLAGS = -Wall -Werror -Wextra -O0 -g3
 debug: CFLAGS += -D_FORTIFY_SOURCE=2 # Run-time buffer overflow detection
 debug: CFLAGS += -fasynchronous-unwind-tables # Increased reliability of backtraces
-debug: CFLAGS += -fstack-clash-protection # Increased reliability of stack overflow detection
+# debug: CFLAGS += -fstack-clash-protection # Increased reliability of stack overflow detection
 debug: re
 
 .PHONY: profile

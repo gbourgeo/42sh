@@ -34,7 +34,7 @@ void ft_pipe_right(t_args *pipes, t_shell *e)
     path = ft_str2join(getcwd(NULL, 0), "/", pipes->next->args[0]);
     if ((fd = open(path, O_RDWR | O_CREAT | O_TRUNC, 0644)) == -1)
     {
-        ft_log(SH_LOG_LEVEL_WARN, "no such file or directory: %s", pipes->next->args[0]);
+        ft_shell_log(SH_LOG_LEVEL_WARN, "no such file or directory: %s", pipes->next->args[0]);
         e->status = 1;
     }
     else
@@ -54,7 +54,7 @@ void ft_pipe_right_2(t_args *pipes, t_shell *e)
     path = ft_str2join(getcwd(NULL, 0), "/", pipes->next->args[0]);
     if ((fd = open(path, O_RDWR | O_CREAT | O_APPEND, 0644)) == -1)
     {
-        ft_log(SH_LOG_LEVEL_WARN, "no such file or directory: %s", pipes->next->args[0]);
+        ft_shell_log(SH_LOG_LEVEL_WARN, "no such file or directory: %s", pipes->next->args[0]);
         e->status = 1;
     }
     else

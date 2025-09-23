@@ -32,20 +32,20 @@ static int ft_cd_chdir_error(char *pwd, const char *dirname, const char *cmdname
         {
             if (lstat(pwd, &buffer) != -1)
             {
-                ft_log(SH_LOG_LEVEL_WARN, "%s: too many levels of symbolic links: %s", cmdname, dirname);
+                ft_shell_log(SH_LOG_LEVEL_WARN, "%s: too many levels of symbolic links: %s", cmdname, dirname);
             }
             else
             {
-                ft_log(SH_LOG_LEVEL_WARN, "%s: no such file or directory: %s", cmdname, dirname);
+                ft_shell_log(SH_LOG_LEVEL_WARN, "%s: no such file or directory: %s", cmdname, dirname);
             }
         }
         else if (!S_ISDIR(buffer.st_mode))
         {
-            ft_log(SH_LOG_LEVEL_WARN, "%s: not a directory: %s", cmdname, dirname);
+            ft_shell_log(SH_LOG_LEVEL_WARN, "%s: not a directory: %s", cmdname, dirname);
         }
         else
         {
-            ft_log(SH_LOG_LEVEL_WARN, "%s: permission denied: %s", cmdname, dirname);
+            ft_shell_log(SH_LOG_LEVEL_WARN, "%s: permission denied: %s", cmdname, dirname);
         }
         free(pwd);
     }
@@ -94,7 +94,7 @@ static int cd_search_in_pwd(const char **dirs, const char *arg_name, t_shell *sh
     tmp = ft_strstr(pwd, dirs[0]);
     if (tmp == NULL)
     {
-        ft_log(SH_LOG_LEVEL_WARN, "%s: string not in pwd: %s", arg_name, dirs[0]);
+        ft_shell_log(SH_LOG_LEVEL_WARN, "%s: string not in pwd: %s", arg_name, dirs[0]);
         return (1);
     }
     pwd = cd_change_in_pwd(dirs, tmp, pwd);
@@ -110,8 +110,8 @@ static int cd_search_in_pwd(const char **dirs, const char *arg_name, t_shell *sh
 
 static int ft_cd_invalid_option(char option, const char *cmd_name)
 {
-    ft_log(SH_LOG_LEVEL_WARN, "%s: invalid option: -%c", cmd_name, option);
-    ft_log(SH_LOG_LEVEL_WARN, "usage: %s [-L|-P] [dir]", cmd_name);
+    ft_shell_log(SH_LOG_LEVEL_WARN, "%s: invalid option: -%c", cmd_name, option);
+    ft_shell_log(SH_LOG_LEVEL_WARN, "usage: %s [-L|-P] [dir]", cmd_name);
     return (1);
 }
 
@@ -154,6 +154,6 @@ int ft_cd(const char **args, t_shell *shell)
     {
         return (cd_search_in_pwd(args + iter, args[0], shell));
     }
-    ft_log(SH_LOG_LEVEL_WARN, "%s: too many arguments: %s", args[0], args[iter + 3]);
+    ft_shell_log(SH_LOG_LEVEL_WARN, "%s: too many arguments: %s", args[0], args[iter + 3]);
     return (1);
 }

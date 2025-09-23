@@ -173,7 +173,7 @@ int ft_env(const char **args, t_shell *shell)
         }
         if (chdir(env.change_dir) != 0)
         {
-            ft_log(SH_LOG_LEVEL_WARN, "%s: cannot change directory to « %s »", args[0], env.change_dir);
+            ft_shell_log(SH_LOG_LEVEL_WARN, "%s: cannot change directory to « %s »", args[0], env.change_dir);
             ft_env_free(&env);
             return (1);
         }

@@ -10,7 +10,6 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "ft_defines.h"
 #include "ft_shell.h"
 #include "ft_shell_command.h"
 #include "ft_shell_terminal.h"
@@ -31,10 +30,9 @@ void ft_print_prev_command(t_shell *shell)
     }
     shell->command = shell->command->next;
     ft_shell_terminal_calc_end_command_position(&shell->terminal, shell->command->len);
-    ft_shell_command_print(shell->command,
-                           &shell->terminal,
-                           UINT32(COMMAND_PRINT_FROM_START)
-                           | UINT32(COMMAND_PRINT_SET_CURSOR_END));
+    ft_shell_command_print(shell->command, &shell->terminal, COMMAND_PRINT_FROM_START);
+    /* Repositionne le curseur à la fin de la commande */
+    ft_term_move_cursor(&shell->terminal, MOVE_CURSOR_END);
 }
 
 /**
@@ -50,8 +48,7 @@ void ft_print_next_command(t_shell *shell)
     }
     shell->command = shell->command->prev;
     ft_shell_terminal_calc_end_command_position(&shell->terminal, shell->command->len);
-    ft_shell_command_print(shell->command,
-                           &shell->terminal,
-                           UINT32(COMMAND_PRINT_FROM_START)
-                           | UINT32(COMMAND_PRINT_SET_CURSOR_END));
+    ft_shell_command_print(shell->command, &shell->terminal, COMMAND_PRINT_FROM_START);
+    /* Repositionne le curseur à la fin de la commande */
+    ft_term_move_cursor(&shell->terminal, MOVE_CURSOR_END);
 }

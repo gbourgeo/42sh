@@ -12,6 +12,7 @@
 
 #include "ft_defines.h"
 #include "ft_shell.h"
+#include "ft_shell_command.h"
 #include "ft_shell_constants.h"
 #include "ft_shell_log.h"
 #include "ft_shell_prompt.h"
@@ -25,7 +26,7 @@
 
 void ft_shell_loop(t_shell *shell)
 {
-    uint8_t key[MAX_KEY_SIZE] = { 0 };
+    uint8_t key[SHELL_KEY_SIZE] = { 0 };
     long    ret               = 1;
 
     /* Main loop */
@@ -35,14 +36,14 @@ void ft_shell_loop(t_shell *shell)
         {
             /* Affiche le prompt */
             ft_shell_prompt_print(&shell->prompt, &shell->terminal);
-            /* Debug */
-            debug_command_line(key, sizeof(key), shell);
+            /* Debug de la Commande */
+            ft_shell_command_debug(key, sizeof(key));
         }
         ft_memset(key, 0, sizeof(key));
         ret = read(shell->terminal.fd, key, sizeof(key));
         if (ret < 0)
         {
-            ft_log(SH_LOG_LEVEL_FATAL, "read: %s", strerror(errno));
+            ft_shell_log(SH_LOG_LEVEL_FATAL, "read: %s", strerror(errno));
             break;
         }
         ft_key_analyser(key, (size_t) ret, shell);

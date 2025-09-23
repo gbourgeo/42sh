@@ -16,10 +16,9 @@
 #include "ft_defines.h"
 #include "ft_shell.h"
 #include "ft_shell_command.h"
+#include "ft_shell_constants.h"
 #include <stddef.h>
 #include <stdint.h>
-
-#define MAX_KEY_SIZE 16
 
 /**
  * @brief Structure des combinaisons de touches de clavier gérées par le shell.
@@ -29,7 +28,7 @@
  */
 typedef struct _align(32) s_special_key
 {
-    char   code[16];
+    char   code[SHELL_KEY_SIZE];
     size_t code_len;
     void   (*handler)(t_shell *);
 } t_key;

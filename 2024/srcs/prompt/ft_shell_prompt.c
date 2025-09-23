@@ -272,10 +272,7 @@ void ft_shell_prompt_print(t_prompt *prompt, t_term *terminal)
         ft_term_clear_line_and_under(terminal);
         ft_putstr(prompt->str);
         /* Récupère la position du curseur */
-        ft_shell_terminal_get_cursor_position(terminal,
-                                              UINT32(MOVE_CURSOR_START)
-                                                  | UINT32(MOVE_CURSOR_CURRENT)
-                                                  | UINT32(MOVE_CURSOR_END));
+        ft_shell_terminal_get_cursor_position(terminal, SET_CURSOR_ALL);
     }
 }
 

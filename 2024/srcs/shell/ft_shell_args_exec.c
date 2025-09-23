@@ -12,6 +12,7 @@
 
 #include "ft_defines.h"
 #include "ft_shell.h"
+#include "ft_shell_builtins.h"
 #include "ft_shell_command.h"
 #include "ft_shell_constants.h"
 #include "ft_shell_history.h"
@@ -21,11 +22,10 @@
 #include <errno.h>
 #include <signal.h>
 #include <stddef.h>
+#include <stdint.h>
 #include <string.h>
 #include <sys/fcntl.h>
 #include <unistd.h>
-
-extern t_shell g_shell; /* Structure de notre environnement global */
 
 /**
  * @brief Fonction générale de capture des signaux.
@@ -41,9 +41,11 @@ static void ft_break_this_signal(int signum)
     //     main(0, NULL);
     else if (signum == SIGWINCH)
     {
+        extern t_shell g_shell;
+
         ft_shell_terminal_get_size(&g_shell.terminal);
-        ft_shell_terminal_get_cursor_position(&g_shell.terminal, MOVE_CURSOR_CURRENT);
-        // debug_command_line((char [16]){0}, &g_shell);
+        ft_shell_terminal_get_cursor_position(&g_shell.terminal, SET_CURSOR_CURRENT);
+        ft_shell_command_debug((const uint8_t[SHELL_KEY_SIZE]) { 0 }, SHELL_KEY_SIZE);
     }
 }
 
@@ -63,7 +65,7 @@ static void ft_catch_signals(t_shell *shell)
             shell->sigs[iter - 1] = signal(iter, &ft_break_this_signal);
             if (shell->sigs[iter - 1] == SIG_ERR)
             {
-                ft_log(SH_LOG_LEVEL_FATAL, "signal %d: %s", iter, strerror(errno));
+                ft_shell_log(SH_LOG_LEVEL_FATAL, "signal %d: %s", iter, strerror(errno));
             }
         }
         else
@@ -81,17 +83,17 @@ void ft_shell_args_exec(const char **argv, t_shell *shell)
         shell->terminal.fd = open(argv[0], O_RDONLY | O_CLOEXEC);
         if (shell->terminal.fd == -1)
         {
-            ft_log(SH_LOG_LEVEL_FATAL, "%s: %s", strerror(errno), argv[0]);
+            ft_shell_log(SH_LOG_LEVEL_FATAL, "%s: %s", strerror(errno), argv[0]);
         }
         else
         {
-            ft_log(SH_LOG_LEVEL_DBG, "File '%s' opened successfully", argv[0]);
+            ft_shell_log(SH_LOG_LEVEL_DBG, "File '%s' opened successfully", argv[0]);
         }
     }
-    else if (ft_shell_terminal_load_termcaps(&shell->terminal, shell) == 0
-            && ft_shell_terminal_change_attributes(&shell->terminal) == 0)
+    else if (ft_shell_terminal_load_termcaps(&shell->terminal, ft_getenv("TERM", shell)) == 0
+             && ft_shell_terminal_change_attributes(&shell->terminal) == 0)
     {
-        ft_log(SH_LOG_LEVEL_DBG, "Terminal capabilities loaded and attributes changed successfully");
+        ft_shell_log(SH_LOG_LEVEL_DBG, "Terminal capabilities loaded and attributes changed successfully");
         ASSIGN_BIT(shell->options, SHELL_INTERACTIVE_MODE);
         ASSIGN_BIT(shell->options, SHELL_TERMATTR_LOADED);
         // TODO(gbo): Parsing du fichier de conf du shell type .42shrc

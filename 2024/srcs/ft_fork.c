@@ -95,7 +95,7 @@ retcode_e fork_function(const char **args, t_shell *shell)
     path = get_path_from(args[0], shell);
     if (path == NULL)
     {
-        ft_log(SH_LOG_LEVEL_WARN, "command not found: %s", args[0]);
+        ft_shell_log(SH_LOG_LEVEL_WARN, "command not found: %s", args[0]);
         return (SHELL_STATUS_FATAL);
     }
     pid = fork();
@@ -103,17 +103,17 @@ retcode_e fork_function(const char **args, t_shell *shell)
     {
         if (waitpid(pid, (int *) &status, 0) != pid)
         {
-            ft_log(SH_LOG_LEVEL_WARN, "Waitpid error");
+            ft_shell_log(SH_LOG_LEVEL_WARN, "Waitpid error");
         }
     }
     else if (pid == 0)
     {
         execve(path, (char * const *) args, shell->global_env);
-        ft_log(SH_LOG_LEVEL_WARN, "Wrong argument: %s", args[0]);
+        ft_shell_log(SH_LOG_LEVEL_WARN, "Wrong argument: %s", args[0]);
     }
     else
     {
-        ft_log(SH_LOG_LEVEL_WARN, "Fork error");
+        ft_shell_log(SH_LOG_LEVEL_WARN, "Fork error");
     }
     free(path);
     return (status);

@@ -96,13 +96,7 @@ const char **ft_shell_args_parse(const char **argv, t_shell *shell);
  * @brief Execution de la commande en cours.
  * @param[in] shell Structure interne du shell
  */
-void ft_shell_command_exec(t_shell *shell);
-
-/**
- * @brief Parsing de la commande en cours.
- * @param shell Structure interne du shell
- */
-void ft_shell_command_parse(t_shell *shell);
+void ft_shell_exec_command(t_shell *shell);
 
 /**
  * @brief Fonction de suppression de la structure interne du shell
@@ -125,38 +119,6 @@ void ft_shell_init(const char *progname, const char **environ,
  * @param shell Structure interne du shell
  */
 void ft_shell_loop(t_shell *shell);
-
-/**
- * @brief Fonction de deboggage du Shell. Affiche les informations suivantes:
- *
- * - 1ère ligne: Ligne (actuelle/totale), Colonne (actuelle/totale), highlight
- * (activé/désactivé), Position du curseur dans la ligne de commande, Longueur
- * du Prompt.
- *
- * - 2nd ligne : Si non NULL, affiche les caractères du buffer passé en
- * paramètre au format hexadécimal.
- *
- * - 3ème ligne: Affiche le zones de textes surlignées.
- *
- * - 4ème ligne: Affiche la ligne de commande courante du Shell.
- *
- * - 5ème ligne: Affiche la ligne de commande sauvegardée.
- *
- * - 6ème ligne: Affiche l'historique de commandes sur une seule ligne.
- *
- * @param buf Buffer à afficher
- * @param ret Taille du buffer
- * @param shell Structure interne du Shell
- */
-void debug_command_line(const uint8_t *buf, long ret, t_shell *shell);
-
-/**
- * @brief Fonction de deboggage des tokens après parsing d'une ligne de
- * commande.
- * @param token Liste de token
- * @param shell Structure interne du shell
- */
-void debug_tokens(t_token *token, t_shell *shell);
 
 int       check_and_exec(const char **args, t_shell *shell);
 retcode_e fork_function(const char **args, t_shell *shell);

@@ -25,6 +25,6 @@ typedef enum
 /*****************************************************************************
  * LOG FUNCTIONS
  ******************************************************************************/
-void ft_log(log_level_e log_level, const char *err_str, ...);
+void ft_shell_log(log_level_e log_level, const char *err_str, ...);
 
 #endif /* _FT_SHELL_LOG_H_ */

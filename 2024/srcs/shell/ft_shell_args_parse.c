@@ -43,7 +43,7 @@ const char **ft_shell_args_parse(const char **argv, t_shell *shell)
         if (ft_strcmp(*argv, "-d") == 0 || ft_strcmp(*argv, "--debug") == 0)
         {
             ASSIGN_BIT(shell->options, SHELL_DEBUG_MODE);
-            ft_log(SH_LOG_LEVEL_DBG, "Debug mode activated");
+            ft_shell_log(SH_LOG_LEVEL_DBG, "Debug mode activated");
         }
         else if (ft_strcmp(*argv, "-h") == 0 || ft_strcmp(*argv, "--help") == 0)
         {
@@ -53,7 +53,7 @@ const char **ft_shell_args_parse(const char **argv, t_shell *shell)
         }
         else
         {
-            ft_log(SH_LOG_LEVEL_FATAL, "Invalid option: %s", *argv);
+            ft_shell_log(SH_LOG_LEVEL_FATAL, "Invalid option: %s", *argv);
             return (NULL);
         }
         argv++;

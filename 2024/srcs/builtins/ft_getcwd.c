@@ -31,7 +31,7 @@ char *ft_getcwd(const char *dir _unused, t_shell *shell)
     pwd = getcwd(NULL, 0);
     if (pwd == NULL)
     {
-        ft_log(SH_LOG_LEVEL_WARN, "getcwd: %s", strerror(errno));
+        ft_shell_log(SH_LOG_LEVEL_WARN, "getcwd: %s", strerror(errno));
     }
     return (pwd);
 }

@@ -34,7 +34,7 @@ static int cd_check_special_arg(
             *pwd = ft_strjoin(ptr, dirname + 1);
             return (0);
         }
-        ft_log(SH_LOG_LEVEL_WARN, "%s: HOME not defined", cmdname);
+        ft_shell_log(SH_LOG_LEVEL_WARN, "%s: HOME not defined", cmdname);
         return (-1);
     }
     if (ft_strcmp(dirname, "-") == 0)
@@ -46,7 +46,7 @@ static int cd_check_special_arg(
             *pwd = ft_strdup(ptr);
             return (0);
         }
-        ft_log(SH_LOG_LEVEL_WARN, "%s: OLDPWD not defined", cmdname);
+        ft_shell_log(SH_LOG_LEVEL_WARN, "%s: OLDPWD not defined", cmdname);
         return (-1);
     }
     return (0);

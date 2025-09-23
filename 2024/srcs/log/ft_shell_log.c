@@ -1,7 +1,7 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   ft_log.c                                           :+:      :+:    :+:   */
+/*   ft_shell_log.c                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: gbourgeo <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
@@ -19,8 +19,6 @@
 #include <stdarg.h>
 #include <unistd.h>
 
-extern t_shell g_shell;
-
 typedef struct _align(32) s_log
 {
     const char *name;
@@ -30,9 +28,10 @@ typedef struct _align(32) s_log
     int         quit;
 } t_log;
 
-void ft_log(log_level_e log_level, const char *err_str, ...)
+void ft_shell_log(log_level_e log_level, const char *err_str, ...)
 {
-    static t_log log_print[] = {
+    extern t_shell g_shell;
+    static t_log   log_print[] = {
         { .fd = STDOUT_FILENO, .name = "DEBUG",   .color = "\033[35m", .status = SHELL_STATUS_OK,      .quit = 0 }, // magenta
         { .fd = STDOUT_FILENO, .name = "INFO",    .color = "\033[37m", .status = SHELL_STATUS_OK,      .quit = 0 }, // white
         { .fd = STDERR_FILENO, .name = "WARNING", .color = "\033[33m", .status = SHELL_STATUS_WARNING, .quit = 0 }, // yellow
@@ -46,7 +45,11 @@ void ft_log(log_level_e log_level, const char *err_str, ...)
         return;
     }
     va_start(argp, err_str);
-    ft_dprintf(log_print[log_level].fd, "%s%s %s: ", log_print[log_level].color, log_print[log_level].name, g_shell.progname);
+    ft_dprintf(log_print[log_level].fd,
+               "%s%s %s: ",
+               log_print[log_level].color,
+               log_print[log_level].name,
+               g_shell.progname);
     ft_vdprintf(log_print[log_level].fd, err_str, argp);
     write(log_print[log_level].fd, "\033[0m\n", sizeof("\033[0m\n"));
     va_end(argp);

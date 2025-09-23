@@ -217,14 +217,14 @@ static ssize_t ft_setenv_option(const char **args, char *interpret)
         }
         else if (args[iter][0] == '-')
         {
-            ft_log(SH_LOG_LEVEL_WARN, "%s: bad option '%s'", args[0], args[iter]);
+            ft_shell_log(SH_LOG_LEVEL_WARN, "%s: bad option '%s'", args[0], args[iter]);
             return (-1);
         }
         iter++;
     }
     if (args[iter] == NULL)
     {
-        ft_log(SH_LOG_LEVEL_WARN, "%s: bad assignment", args[0]);
+        ft_shell_log(SH_LOG_LEVEL_WARN, "%s: bad assignment", args[0]);
         return (-1);
     }
     return (iter);
@@ -264,7 +264,7 @@ int ft_setenv(const char **args, t_shell *shell)
         }
         else
         {
-            ft_log(SH_LOG_LEVEL_WARN, "%s: missing value: '%s'", args[0], args[iter]);
+            ft_shell_log(SH_LOG_LEVEL_WARN, "%s: missing value: '%s'", args[0], args[iter]);
             return (1);
         }
         iter++;

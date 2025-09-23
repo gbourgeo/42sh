@@ -45,8 +45,8 @@ void ft_pipe_pipe(t_args *pipes, t_shell *e)
             e->status = check_and_exec((const char **) pipes->next->args, e);
         }
         else
-            ft_log(SH_LOG_LEVEL_WARN, "fork() failed");
+            ft_shell_log(SH_LOG_LEVEL_WARN, "fork() failed");
     }
     else
-        ft_log(SH_LOG_LEVEL_WARN, "pipe() failed");
+        ft_shell_log(SH_LOG_LEVEL_WARN, "pipe() failed");
 }

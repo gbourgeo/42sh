@@ -62,7 +62,5 @@ void ft_highlight_yank(t_shell *shell)
     /* Suppression des zones surlignées */
     shell->command->harea = ft_highlight_remove_all(shell->command->harea);
     /* Réécriture de la ligne de commande sans surlignage */
-    ft_shell_command_print(shell->command,
-                           &shell->terminal,
-                           UINT32(COMMAND_PRINT_FROM_START));
+    ft_shell_command_print(shell->command, &shell->terminal, COMMAND_PRINT_FROM_START);
 }

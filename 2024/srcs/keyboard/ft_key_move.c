@@ -69,7 +69,7 @@ void ft_move_cursor_end_of_command(t_shell *shell)
     {
         size_t value = command->len - command->pos;
         ft_command_highlight_move_areas(command, SHELL_HIGHLIGHTED_AREA_MOVE_RIGHT, value);
-        ft_shell_command_print(command, &shell->terminal, UINT32(COMMAND_PRINT_FROM_POS));
+        ft_shell_command_print(command, &shell->terminal, COMMAND_PRINT_FROM_POS);
     }
     ft_command_change_pos(command,
                           command->len - command->pos,
@@ -93,7 +93,7 @@ void ft_move_cursor_start_of_commmand(t_shell *shell)
                               command->pos,
                               COMMAND_POS_SUBSTRACT_VALUE,
                               &shell->terminal);
-        ft_shell_command_print(command, &shell->terminal, UINT32(COMMAND_PRINT_FROM_START));
+        ft_shell_command_print(command, &shell->terminal, COMMAND_PRINT_FROM_START);
     }
     else
     {
@@ -131,7 +131,7 @@ void ft_move_word_right(t_shell *shell)
     if (TEST_BIT(command->option, COMMAND_HIGHLIGHT_MODE)) /* Mode surlignage actif */
     {
         ft_command_highlight_move_areas(command, SHELL_HIGHLIGHTED_AREA_MOVE_RIGHT, value);
-        ft_shell_command_print(command, &shell->terminal, UINT32(COMMAND_PRINT_FROM_POS));
+        ft_shell_command_print(command, &shell->terminal, COMMAND_PRINT_FROM_POS);
     }
     ft_command_change_pos(command,
                           value,
@@ -169,7 +169,7 @@ void ft_move_word_left(t_shell *shell)
                               value,
                               COMMAND_POS_SUBSTRACT_VALUE,
                               &shell->terminal);
-        ft_shell_command_print(command, &shell->terminal, UINT32(COMMAND_PRINT_FROM_POS));
+        ft_shell_command_print(command, &shell->terminal, COMMAND_PRINT_FROM_POS);
     }
     else
     {

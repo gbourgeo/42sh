@@ -46,7 +46,7 @@ int ft_unsetenv(const char **args, t_shell *shell)
 {
     if (!args[1])
     {
-        ft_log(SH_LOG_LEVEL_WARN, "%s: No assignment", args[0]);
+        ft_shell_log(SH_LOG_LEVEL_WARN, "%s: No assignment", args[0]);
     }
     else
     {

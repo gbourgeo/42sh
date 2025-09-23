@@ -81,22 +81,29 @@ typedef struct _align(32) s_args
 } t_args;
 
 /**
- * @brief Découpe la commande passée en paramètre en une liste simplement chaînée de token.
- * @param token Token de départ
- * @param command Chaîne de caractère(s) à parser
- * @param ifs Chaîne de caractère(s) de séparation de mots
- * @return Liste de token.
+ * @brief Fonction de deboggage des tokens après parsing d'une Commande.
+ * @param token Liste de token
  */
-size_t ft_token_recognition(t_token      **token,
-                            const uint8_t *command,
-                            const uint8_t *end_of_input,
-                            const uint8_t *ifs);
+void ft_shell_token_debug(const t_token *token);
 
 /**
  * @brief Désalloue une liste de token.
- * @param token_list Liste de token
+ * @param token Liste de token
  */
-void ft_free_token_list(t_token *token_list);
+void ft_shell_token_delete(t_token *token);
+
+/**
+ * @brief Découpe la commande passée en paramètre en une liste simplement chaînée de token.
+ * @param[out] token Liste de Token de résultat
+ * @param[in] buffer Buffer à parser
+ * @param[in] end_of_input Caractère(s) de fin
+ * @param[in] ifs Séparateur(s) de mots
+ * @return Liste de token.
+ */
+size_t ft_shell_token_recognition(t_token      **token,
+                                  const uint8_t *buffer,
+                                  const uint8_t *end_of_input,
+                                  const uint8_t *ifs);
 
 /**
  * @brief Retourne le type de token en chaîne de caractères.

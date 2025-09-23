@@ -15,11 +15,8 @@
 #include "ft_shell.h"
 #include "ft_shell_command.h"
 #include "ft_shell_constants.h"
-#include "ft_shell_log.h"
 #include "ft_shell_terminal.h"
-#include "ft_shell_token.h"
 #include "ft_snprintf.h"
-#include "libft.h"
 #include <stddef.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -40,17 +37,17 @@ typedef struct _align(4) debug_s
     int lines_printed; /* Compteur de ligne écrites */
 } debug_t;
 
-static void preexec_print_info(debug_t *dbg, t_shell *shell)
+static void preexec_print_info(debug_t *dbg, const t_term *terminal)
 {
     /* Initialise la structure debug_t */
     dbg->lines_printed = 0;
     /* Désactive tous les modes actifs */
-    ft_term_clear_modes(&shell->terminal);
+    ft_term_clear_modes(terminal);
     /* Positionne le curseur à la fin de la commande */
-    ft_term_move_cursor(&shell->terminal, MOVE_CURSOR_END);
+    ft_term_move_cursor(terminal, MOVE_CURSOR_END);
 }
 
-static void postexec_print_info(debug_t *dbg, t_term *terminal, t_cmd *command)
+static void postexec_print_info(debug_t *dbg, t_term *terminal, const t_cmd *command)
 {
     if (terminal->end.line + dbg->lines_printed > terminal->max_line)
     {
@@ -68,12 +65,12 @@ static void postexec_print_info(debug_t *dbg, t_term *terminal, t_cmd *command)
     }
 }
 
-static void add_lines_printed(debug_t *dbg, int char_printed, t_term *terminal)
+static void add_lines_printed(debug_t *dbg, int char_printed, const t_term *terminal)
 {
     dbg->lines_printed = dbg->lines_printed + (char_printed / terminal->max_column) + 1;
 }
 
-static void random_print_info(debug_t *dbg, t_shell *shell)
+static void random_print_info(debug_t *dbg, const t_shell *shell)
 {
     int buff_print = 0;
 
@@ -85,7 +82,7 @@ static void random_print_info(debug_t *dbg, t_shell *shell)
     add_lines_printed(dbg, buff_print, &shell->terminal);
 }
 
-static void buffer_print_info(const uint8_t *buf, long buff_len, debug_t *dbg, t_shell *shell)
+static void buffer_print_info(const uint8_t *buf, long buff_len, debug_t *dbg, const t_shell *shell)
 {
     long iter       = 0;
     int  buff_print = 0;
@@ -102,7 +99,7 @@ static void buffer_print_info(const uint8_t *buf, long buff_len, debug_t *dbg, t
     add_lines_printed(dbg, buff_print, &shell->terminal);
 }
 
-static void command_print_info(debug_t *dbg, t_shell *shell)
+static void command_print_info(debug_t *dbg, const t_shell *shell)
 {
     int buff_print = 0;
 
@@ -124,7 +121,7 @@ static void command_print_info(debug_t *dbg, t_shell *shell)
     }
 }
 
-static void highlighted_text_print_info(debug_t *dbg, t_shell *shell)
+static void highlighted_text_print_info(debug_t *dbg, const t_shell *shell)
 {
     t_higharea *first      = shell->command->harea;
     t_higharea *harea      = NULL;
@@ -178,7 +175,7 @@ static void highlighted_text_print_info(debug_t *dbg, t_shell *shell)
     }
 }
 
-static void historic_print_info(debug_t *dbg, t_shell *shell)
+static void historic_print_info(debug_t *dbg, const t_shell *shell)
 {
     t_cmd *cmd        = ft_shell_command_get_first(shell->command);
     t_cmd *hist       = shell->command->next;
@@ -242,7 +239,7 @@ static void historic_print_info(debug_t *dbg, t_shell *shell)
     add_lines_printed(dbg, buff_print, &shell->terminal);
 }
 
-static void cursor_print_info(debug_t *dbg, t_shell *shell)
+static void cursor_print_info(debug_t *dbg, const t_shell *shell)
 {
     int buff_print = 0;
     int line       = 0;
@@ -290,113 +287,27 @@ static void cursor_print_info(debug_t *dbg, t_shell *shell)
     add_lines_printed(dbg, buff_print, &shell->terminal);
 }
 
-void debug_command_line(const uint8_t *buf, long ret, t_shell *shell)
+void ft_shell_command_debug(const uint8_t *buffer, long size)
 {
-    debug_t dbg;
+    extern t_shell g_shell;
+    debug_t        dbg;
 
-    if (!TEST_BIT(shell->options, SHELL_DEBUG_MODE))
+    if (!TEST_BIT(g_shell.options, SHELL_DEBUG_MODE))
     {
         return;
     }
-
-    preexec_print_info(&dbg, shell);
-
+    preexec_print_info(&dbg, &g_shell.terminal);
     /* Affiche les informatiosn "random" comme le highlight actif ou la longueur du prompt */
-    random_print_info(&dbg, shell);
+    random_print_info(&dbg, &g_shell);
     /* Affiche le contenu du buffer au format hexadecimal */
-    buffer_print_info(buf, ret, &dbg, shell);
+    buffer_print_info(buffer, size, &dbg, &g_shell);
     /* Affiche les informations de la commande en cours */
-    command_print_info(&dbg, shell);
+    command_print_info(&dbg, &g_shell);
     /* Affiche les informations des zones de texte surlignés */
-    highlighted_text_print_info(&dbg, shell);
+    highlighted_text_print_info(&dbg, &g_shell);
     /* Affiche les informations d'historique */
-    historic_print_info(&dbg, shell);
+    historic_print_info(&dbg, &g_shell);
     /* Affiche des infos sur les positions du curseur */
-    cursor_print_info(&dbg, shell);
-
-    postexec_print_info(&dbg, &shell->terminal, shell->command);
-}
-
-static t_token *debug_tokens_print_token(t_token *first, t_token *last,
-                                         const long *saved_len, t_shell *shell)
-{
-    char info[256] = { 0 };
-    long info_len  = 0;
-    int  nb_tokens = 0;
-
-    ft_printf("\n");
-    while (first != last)
-    {
-        info_len = ft_snprintf(info, sizeof(info), "%.*s", first->head - first->tail, shell->command->buffer + first->tail);
-        for (long i = info_len; i < saved_len[nb_tokens]; i++)
-        {
-            ft_strncat(info, " ", sizeof(info));
-        }
-        ft_printf("\033[36m%s%s\033[0m", (nb_tokens == 0) ? "  " : "   ", info);
-        nb_tokens++;
-        first = first->next;
-    }
-    ft_printf("\n");
-    return (first);
-}
-
-void debug_tokens(t_token *token, t_shell *shell)
-{
-    char     info[256]  = { 0 };
-    long     info_len   = 0;
-    t_token *ptr        = NULL;
-    int      start_save = 0;
-    int      nb_tokens  = 0;
-    int      printed    = 0;
-    long    *saved_len  = NULL;
-
-    if (!TEST_BIT(shell->options, SHELL_DEBUG_MODE))
-    {
-        return;
-    }
-    ft_log(SH_LOG_LEVEL_DBG, "Line: %s", shell->command->buffer);
-    // Calcul du nombre total de token
-    ptr = token;
-    while (ptr)
-    {
-        nb_tokens++;
-        ptr = ptr->next;
-    }
-    if (nb_tokens == 0)
-    {
-        return;
-    }
-    saved_len = malloc((size_t) nb_tokens * sizeof(*saved_len));
-    ptr       = token;
-    ft_log(SH_LOG_LEVEL_DBG, "Token list:  TYPE (length) | ...");
-    nb_tokens = 0;
-    while (token)
-    {
-        info_len = ft_snprintf(info, sizeof(info), "%s (%ld)", ft_token_type_to_str(token->type), token->head - token->tail);
-
-        if (printed + info_len + 3 < shell->terminal.max_column)
-        {
-            saved_len[nb_tokens] = (info_len > (long) (token->head - token->tail)) ? info_len : (long) (token->head - token->tail);
-            for (long i = info_len; i < saved_len[nb_tokens]; i++)
-            {
-                ft_strncat(info, " ", sizeof(info));
-            }
-            printed += ft_printf("%s%s", (token == ptr) ? "  " : " | ", info);
-            nb_tokens++;
-            token = token->next;
-        }
-        else                  // On est arrivé à écrire jusqu'à la fin du terminal
-        {
-            if (ptr == token) // On a rien écrit, terminal trop petit, on quitte
-            {
-                ft_printf(" \033[31mAborted\033[0m\n");
-                break;
-            }
-            ptr        = debug_tokens_print_token(ptr, token, saved_len + start_save, shell);
-            start_save = nb_tokens;
-            printed    = 0;
-        }
-    }
-    debug_tokens_print_token(ptr, token, saved_len + start_save, shell);
-    free(saved_len);
+    cursor_print_info(&dbg, &g_shell);
+    postexec_print_info(&dbg, &g_shell.terminal, g_shell.command);
 }

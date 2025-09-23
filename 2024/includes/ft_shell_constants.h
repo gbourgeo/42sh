@@ -31,6 +31,7 @@ enum e_shell_options
 
 enum
 {
+    SHELL_KEY_SIZE           = 8,
     SHELL_COMMAND_BUFFER_HOP = 128,
     SHELL_PROMPT_MAX_LENGTH  = 1024,
 };
