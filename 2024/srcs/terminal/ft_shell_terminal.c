@@ -12,7 +12,6 @@
 
 #include "ft_shell_terminal.h"
 #include "ft_defines.h"
-#include "ft_shell_constants.h"
 #include "ft_shell_log.h"
 #include "libft.h"
 #include <stddef.h>
@@ -27,20 +26,7 @@
 void ft_shell_terminal_init(t_term *terminal)
 {
     ft_memset(terminal, 0, sizeof(*terminal));
-    terminal->fd = STDIN_FILENO;
     ft_shell_terminal_get_size(terminal);
-}
-
-void ft_shell_terminal_clear(const t_term *terminal, uint32_t options)
-{
-    if (TEST_BIT(options, SHELL_TERMATTR_LOADED))
-    {
-        ft_shell_terminal_restore_attributes(terminal);
-    }
-    if (terminal->fd > 0 && terminal->fd != STDIN_FILENO)
-    {
-        close(terminal->fd);
-    }
 }
 
 void ft_shell_terminal_get_size(t_term *terminal)
@@ -148,58 +134,21 @@ static int ft_get_termcaps(const char ** const capabilities)
         capabilities[iter] = tgetstr(caps[iter], NULL);
         if (capabilities[iter] == NULL && iter != TERMCAP_MOVE_CURSOR_DOWN)
         {
-            ft_shell_log(SH_LOG_LEVEL_FATAL, "termcaps: capability %s not available.", caps[iter]);
-            error = 1;
+            ft_shell_log(SH_LOG_LEVEL_FATAL, "termcaps: capability '%s' not available.", caps[iter]);
+            error = -1;
         }
         iter++;
     }
     return (error);
 }
 
-int ft_shell_terminal_load_termcaps(t_term *terminal, const char *term)
-{
-    char *tty_name = NULL;
-    int   ret      = 0;
-
-    if (isatty(STDIN_FILENO) == 0)
-    {
-        ft_shell_log(SH_LOG_LEVEL_FATAL, "termcaps: Terminal not valid.");
-        return (1);
-    }
-    tty_name = ttyname(STDIN_FILENO);
-    if (tty_name == NULL)
-    {
-        ft_shell_log(SH_LOG_LEVEL_FATAL, "termcaps: Not connected to a terminal");
-        return (1);
-    }
-    terminal->fd = open(tty_name, O_RDWR | O_CLOEXEC);
-    if (terminal->fd == -1)
-    {
-        ft_shell_log(SH_LOG_LEVEL_FATAL, "termcaps: Failed to open tty \"%s\".", tty_name);
-        return (1);
-    }
-    if (tcgetattr(terminal->fd, &terminal->ios) != 0)
-    {
-        (ft_shell_log(SH_LOG_LEVEL_FATAL, "termcaps: Can't get terminal attributes."));
-        return (1);
-    }
-    if (term == NULL)
-    {
-        ft_shell_log(SH_LOG_LEVEL_FATAL, "termcaps: Specify a terminal type in your environment.");
-        return (1);
-    }
-    ret = tgetent(terminal->desc, term);
-    if (ret <= 0)
-    {
-        ft_shell_log(SH_LOG_LEVEL_FATAL,
-               "termcaps: %s.",
-               (ret == 0) ? "Terminal not defined in database" : "Termcap's data base files unavailable");
-        return (1);
-    }
-    return ft_get_termcaps((const char ** const) terminal->capabilities);
-}
-
-int ft_shell_terminal_change_attributes(const t_term *terminal)
+/**
+ * @brief Fonction de chargement des nouveaux attributs du terminal.
+ * @param filed Terminal File Descriptor
+ * @param terminal Structure interne Terminal
+ * @return 0 OK, 1 autrement.
+ */
+static int ft_shell_terminal_change_attributes(int filed, const t_term *terminal)
 {
     struct termios termios;
 
@@ -207,20 +156,74 @@ int ft_shell_terminal_change_attributes(const t_term *terminal)
     REMOVE_BIT(termios.c_lflag, ICANON | ECHO | ISIG);
     termios.c_cc[VMIN]  = 1;
     termios.c_cc[VTIME] = 0;
-    if ((tcsetattr(terminal->fd, TCSANOW, &termios)) == -1)
-    {
-        ft_shell_log(SH_LOG_LEVEL_FATAL, "failed to load terminal attributes");
-        return (1);
-    }
-    return (0);
+    return tcsetattr(filed, TCSANOW, &termios);
 }
 
-void ft_shell_terminal_restore_attributes(const t_term *terminal)
+int ft_shell_terminal_load(t_term *terminal, const char *term)
 {
-    if (tcsetattr(terminal->fd, TCSANOW, &terminal->ios) == -1)
+    char *tty_name = NULL;
+    int   filed    = 0;
+    int   ret      = 0;
+
+    if (term == NULL)
     {
-        ft_shell_log(SH_LOG_LEVEL_FATAL, "failed to restore terminal attributes");
+        ft_shell_log(SH_LOG_LEVEL_FATAL,
+                     "Specify a terminal type in your environment (TERM=\"xxx\"). "
+                     "Available terminal types can be found under /usr/share/terminfo, "
+                     "/usr/lib/terminfo, /etc/termcap or occasionally /usr/share/misc. "
+                     "An easier description will be in termcap(5) and/or terminfo(5).");
+        return (-1);
     }
+    ret = tgetent(terminal->desc, term);
+    if (ret == 0)
+    {
+        ft_shell_log(SH_LOG_LEVEL_FATAL, "'%s': Terminal not defined in database.", term);
+        return (-1);
+    }
+    if (ret < 0)
+    {
+        ft_shell_log(SH_LOG_LEVEL_FATAL, "'%s': Termcap's data base files unavailable.", term);
+        return (-1);
+    }
+
+    ft_shell_log(SH_LOG_LEVEL_DBG, "'%s': %s", term, (terminal->desc[0]) ? terminal->desc : "no description");
+    if (isatty(STDIN_FILENO) == 0)
+    {
+        ft_shell_log(SH_LOG_LEVEL_FATAL, "Not a valid tty.", term);
+        return (-1);
+    }
+    tty_name = ttyname(STDIN_FILENO);
+    if (tty_name == NULL)
+    {
+        ft_shell_log(SH_LOG_LEVEL_FATAL, "Not connected to a terminal.");
+        return (-1);
+    }
+    ft_shell_log(SH_LOG_LEVEL_DBG, "'%s': TTY name '%s'", term, tty_name);
+    filed = open(tty_name, O_RDWR | O_CLOEXEC);
+    if (filed == -1)
+    {
+        ft_shell_log(SH_LOG_LEVEL_FATAL, "'%s': Failed to open TTY.", tty_name);
+        return (-1);
+    }
+    if (tcgetattr(filed, &terminal->ios) != 0)
+    {
+        ft_shell_log(SH_LOG_LEVEL_FATAL, "'%s'': Terminal attributes unavailable.", tty_name);
+        close(filed);
+        return (-1);
+    }
+    if (ft_get_termcaps((const char ** const) terminal->capabilities) != 0)
+    {
+        close(filed);
+        return (-1);
+    }
+    if (ft_shell_terminal_change_attributes(filed, terminal) == -1)
+    {
+        ft_shell_log(SH_LOG_LEVEL_FATAL, "'%s': failed to load terminal attributes", term);
+        close(filed);
+        return (-1);
+    }
+    ft_shell_log(SH_LOG_LEVEL_DBG, "'%s': Terminal capabilities loaded and attributes changed successfully", term);
+    return (filed);
 }
 
 void ft_term_clear_line_and_under(const t_term *terminal)

@@ -57,7 +57,7 @@ static t_higharea *ft_highlight_new_area(t_higharea *htexts, size_t pos)
  */
 static t_higharea *ft_highlight_get_area(t_higharea *htexts, size_t pos)
 {
-    t_higharea *first = ft_highlight_first(htexts);
+    t_higharea *first = ft_command_highlight_first(htexts);
 
     if (first != NULL)
     {
@@ -87,7 +87,7 @@ void ft_highlight_mode(t_shell *shell)
     {
         REMOVE_BIT(shell->command->option, COMMAND_HIGHLIGHT_MODE); /* Désactive l'option */
         ft_term_clear_modes(&shell->terminal);                      /* Désactive tous les modes actifs */
-        shell->command->harea = ft_highlight_sort_area(shell->command->harea);
+        shell->command->harea = ft_command_highlight_sort_area(shell->command->harea);
     }
     else                                                            /* Highlight mode : inactif */
     {

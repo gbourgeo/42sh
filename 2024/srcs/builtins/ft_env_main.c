@@ -209,10 +209,10 @@ int ft_env(const char **args, t_shell *shell)
                 iter++;
             }
         }
-        env.save          = shell->global_env;
-        shell->global_env = env.cpy;
-        ret               = check_and_exec(&args[pos], shell);
-        shell->global_env = env.save;
+        env.save              = shell->environ.public;
+        shell->environ.public = env.cpy;
+        ret                   = check_and_exec(&args[pos], shell);
+        shell->environ.public = env.save;
     }
     ft_env_free(&env);
     return (ret);

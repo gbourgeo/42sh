@@ -59,7 +59,7 @@ static size_t ft_remove_field_from_table(char **table, size_t pos, size_t times)
 }
 
 /**
- * @brief Cette fonction reçoit en entrée un chaîne de caractères représentant
+ * @brief Cette fonction reçoit en entrée une chaîne de caractères représentant
  * un chemin absolu pouvant comporter des '..' et des '.' (ex: "/home/user/work/../libft/./src").
  * Elle parse cette chaîne et traduit les '..' et '.' pour en sortir une chaine sans (ex:
  * "/home/user/libft/src").

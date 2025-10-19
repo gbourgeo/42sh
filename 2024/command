@@ -12,3 +12,6 @@ Expansions:${} ${} $() $(()) `` ${}$ ( ). { }... ->- fin
 Nested_expansions: $( here it comes $( nested ) ) ; $($()) ;
 $( $( ) );ls
 Nested_expansions: $( $( ) );${ ${ } };` ` ` `;` $( ) `;end
+
+Escaped Newline \
+Here. End

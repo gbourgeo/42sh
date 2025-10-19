@@ -14,13 +14,13 @@
 #define _FT_SHELL_BUILTINS_H_
 
 #include "ft_shell.h"
+#include "ft_shell_environ.h"
 
 typedef enum cd_options
 {
     CD_RESOLVE_UNDEFINED = 0x0000,
     CD_RESOLVE_BEFORE    = 0x0001,
     CD_RESOLVE_AFTER     = 0X0002,
-    CD_BREAK             = 0x1000,
 } cd_e;
 
 typedef enum echo_options
@@ -42,16 +42,11 @@ typedef enum echo_options
 int         ft_env(const char **args, t_shell *shell);
 void        ft_exit(const char **args, t_shell *shell);
 int         ft_setenv(const char **args, t_shell *shell);
-char      **ft_modify_env(const char *key, const char *value, char **env, char interpret);
 int         ft_unsetenv(const char **args, t_shell *shell);
 int         ft_cd(const char **args, t_shell *shell);
-char       *cd_check(const char *dir, const char *cmdname, t_shell *shell);
 char       *cd_point(char **args, char ***env);
 char       *cd_slash(char **args, char ***env);
 void        cd_change_pwds(const char *pwd, t_shell *shell);
 int         ft_echo(const char **args, t_shell *shell);
-const char *ft_real_getenv(const char *str, const char **env);
-const char *ft_getenv(const char *str, t_shell *shell);
-char       *ft_getcwd(const char *dir, t_shell *shell);
 
 #endif /* _FT_SHELL_BUILTINS_H_ */

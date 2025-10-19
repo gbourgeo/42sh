@@ -217,7 +217,7 @@ int ft_env_option_parser(t_shell *shell, t_builtin_env *env, const char **args, 
     size_t      iarg  = 0;
     int         ret   = 0;
 
-    env->cpy = ft_tabdup((const char **) shell->global_env);
+    env->cpy = ft_tabdup((const char **) shell->environ.public);
     if (env->cpy == NULL)
     {
         ft_shell_log(SH_LOG_LEVEL_ERR,

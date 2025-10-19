@@ -12,9 +12,9 @@
 
 #include "ft_defines.h"
 #include "ft_shell.h"
-#include "ft_shell_builtins.h"
 #include "ft_shell_command.h"
 #include "ft_shell_constants.h"
+#include "ft_shell_environ.h"
 #include "ft_shell_history.h"
 #include "ft_shell_log.h"
 #include "ft_shell_prompt.h"
@@ -25,6 +25,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <sys/fcntl.h>
+#include <sys/signal.h>
 #include <unistd.h>
 
 /**
@@ -66,6 +67,7 @@ static void ft_catch_signals(t_shell *shell)
             if (shell->sigs[iter - 1] == SIG_ERR)
             {
                 ft_shell_log(SH_LOG_LEVEL_FATAL, "signal %d: %s", iter, strerror(errno));
+                errno = 0;
             }
         }
         else
@@ -80,29 +82,32 @@ void ft_shell_args_exec(const char **argv, t_shell *shell)
 {
     if (argv != NULL && *argv != NULL)
     {
-        shell->terminal.fd = open(argv[0], O_RDONLY | O_CLOEXEC);
-        if (shell->terminal.fd == -1)
+        shell->fd = open(argv[0], O_RDONLY | O_CLOEXEC);
+        if (shell->fd == -1)
         {
             ft_shell_log(SH_LOG_LEVEL_FATAL, "%s: %s", strerror(errno), argv[0]);
+            errno = 0;
         }
         else
         {
             ft_shell_log(SH_LOG_LEVEL_DBG, "File '%s' opened successfully", argv[0]);
         }
     }
-    else if (ft_shell_terminal_load_termcaps(&shell->terminal, ft_getenv("TERM", shell)) == 0
-             && ft_shell_terminal_change_attributes(&shell->terminal) == 0)
+    else
     {
-        ft_shell_log(SH_LOG_LEVEL_DBG, "Terminal capabilities loaded and attributes changed successfully");
         ASSIGN_BIT(shell->options, SHELL_INTERACTIVE_MODE);
-        ASSIGN_BIT(shell->options, SHELL_TERMATTR_LOADED);
-        // TODO(gbo): Parsing du fichier de conf du shell type .42shrc
-        shell->command_size = ft_shell_history_parse_file(&shell->command,
-                                                          &shell->history,
-                                                          shell->progname,
-                                                          (const char **) shell->internal_env);
-        ft_shell_prompt_create(&shell->prompt, (void *) shell);
-        ft_catch_signals(shell);
+        shell->fd = ft_shell_terminal_load(&shell->terminal, ft_shell_env_get_value("TERM", &shell->environ));
+        if (shell->fd > 0)
+        {
+            ASSIGN_BIT(shell->options, SHELL_TERMATTR_LOADED);
+            // TODO(gbo): Parsing du fichier de conf du shell type .42shrc
+            shell->command_size = ft_shell_history_parse_file(&shell->command,
+                                                              &shell->history,
+                                                              &shell->environ,
+                                                              shell->progname);
+            shell->command      = ft_shell_command_new(NULL, shell->command, NULL, 0);
+            ft_shell_prompt_create(&shell->prompt, &shell->environ);
+            ft_catch_signals(shell);
+        }
     }
-    shell->command = ft_shell_command_new(NULL, shell->command, 0);
 }

@@ -14,6 +14,7 @@
 #define _FT_SHELL_PROMPT_H_
 
 #include "ft_defines.h"
+#include "ft_shell_environ.h"
 #include "ft_shell_terminal.h"
 #include <stddef.h>
 
@@ -41,11 +42,10 @@ void ft_shell_prompt_init(t_prompt *prompt);
 
 /**
  * @brief Créé le prompt du shell (mode interactif).
- * @param prompt Structure interne du prompt
- * @param shell Structure interne du shell
+ * @param prompt Prompt du Shell
+ * @param environ Environement du Shell
  */
-void ft_shell_prompt_create(t_prompt *prompt,
-                            void     *shell);
+void ft_shell_prompt_create(t_prompt *prompt, t_env *environ);
 
 /**
  * @brief Affiche le prompt du shell (mode interactif).

@@ -17,13 +17,12 @@ NAME = 42sh
 SRC_DIR         = srcs/
 BUILTINS_DIR    = $(SRC_DIR)builtins/
 COMMAND_DIR     = $(SRC_DIR)command/
+ENVIRON_DIR  	= $(SRC_DIR)environ/
 HIGHLIGHT_DIR   = $(SRC_DIR)highlight/
 HISTORY_DIR     = $(SRC_DIR)history/
 KEYBOARD_DIR    = $(SRC_DIR)keyboard/
 LOG_DIR         = $(SRC_DIR)log/
-PIPEX_DIR       = $(SRC_DIR)pipex/
 PROMPT_DIR      = $(SRC_DIR)prompt/
-REDIRECTION_DIR = $(SRC_DIR)redirections/
 SHELL_DIR       = $(SRC_DIR)shell/
 TERMINAL_DIR    = $(SRC_DIR)terminal/
 TOKEN_DIR       = $(SRC_DIR)token/
@@ -35,21 +34,20 @@ SRC = ft_check_and_exec.c            \
 	ft_get_path.c
 
 BUILTINS_SRC = ft_cd.c               \
-			ft_cd_check.c            \
 			ft_cd_change_pwds.c      \
 			ft_echo.c                \
 			ft_env_main.c            \
 			ft_env_option_parser.c   \
 			ft_exit.c                \
-			ft_getcwd.c              \
 			ft_setenv.c              \
-			ft_getenv.c              \
 			ft_unsetenv.c
 
 COMMAND_SRC = ft_command_highlight.c \
 			ft_shell_command_debug.c \
 			ft_shell_command_parse.c \
 			ft_shell_command.c
+
+ENVIRON_SRC = ft_shell_environ.c
 
 HIGHLIGHT_SRC = ft_highlight_mode.c  \
 				ft_highlight_paste.c \
@@ -69,24 +67,14 @@ LOG_SRC = ft_shell_log.c
 
 PROMPT_SRC = ft_shell_prompt.c
 
-PIPEX_SRC = ft_pipe_left.c           \
-			ft_pipe_pipe.c           \
-			ft_pipe_rights.c         \
-			ft_pipex_or_exec.c
-
-REDIRECTION_SRC = ft_argsnew.c       \
-		ft_lexical_analysis.c        \
-		ft_pipes_errors.c            \
-		ft_separators_errors.c       \
-		ft_syntax_analysis.c
-
 SHELL_SRC = ft_shell_args_exec.c     \
 			ft_shell_args_parse.c    \
 			ft_shell_exec_command.c  \
 			ft_shell_exit.c          \
 			ft_shell_init.c          \
 			ft_shell_main.c          \
-			ft_shell_loop.c
+			ft_shell_loop.c          \
+			ft_shell_resolve_path.c
 
 TERMINAL_SRC = ft_shell_terminal.c
 
@@ -98,13 +86,12 @@ OBJ_DIR = obj/
 SRC_OBJ  = $(addprefix $(OBJ_DIR), $(SRC:.c=.o))
 SRC_OBJ += $(addprefix $(OBJ_DIR), $(BUILTINS_SRC:.c=.o))
 SRC_OBJ += $(addprefix $(OBJ_DIR), $(COMMAND_SRC:.c=.o))
+SRC_OBJ += $(addprefix $(OBJ_DIR), $(ENVIRON_SRC:.c=.o))
 SRC_OBJ += $(addprefix $(OBJ_DIR), $(HIGHLIGHT_SRC:.c=.o))
 SRC_OBJ += $(addprefix $(OBJ_DIR), $(HISTORY_SRC:.c=.o))
 SRC_OBJ += $(addprefix $(OBJ_DIR), $(KEYBOARD_SRC:.c=.o))
 SRC_OBJ += $(addprefix $(OBJ_DIR), $(LOG_SRC:.c=.o))
-SRC_OBJ += $(addprefix $(OBJ_DIR), $(PIPEX_SRC:.c=.o))
 SRC_OBJ += $(addprefix $(OBJ_DIR), $(PROMPT_SRC:.c=.o))
-SRC_OBJ += $(addprefix $(OBJ_DIR), $(REDIRECTION_SRC:.c=.o))
 SRC_OBJ += $(addprefix $(OBJ_DIR), $(SHELL_SRC:.c=.o))
 SRC_OBJ += $(addprefix $(OBJ_DIR), $(TERMINAL_SRC:.c=.o))
 SRC_OBJ += $(addprefix $(OBJ_DIR), $(TOKEN_SRC:.c=.o))
@@ -142,55 +129,51 @@ $(NAME): $(SRC_OBJ)
 -include $(DEPENDS)
 
 $(OBJ_DIR)%.o: $(SRC_DIR)%.c
-	@$(CC) $(CFLAGS) -MMD -o $@ -c $< $(INCLUDES) $(ENV)
+	@$(CC) $(CFLAGS) -MMD -o $@ -c $< $(INCLUDES)
 	@/bin/echo -n "."
 
 $(OBJ_DIR)%.o: $(BUILTINS_DIR)%.c
-	@$(CC) $(CFLAGS) -MMD -o $@ -c $< $(INCLUDES) $(ENV)
+	@$(CC) $(CFLAGS) -MMD -o $@ -c $< $(INCLUDES)
 	@/bin/echo -n "."
 
 $(OBJ_DIR)%.o: $(COMMAND_DIR)%.c
-	@$(CC) $(CFLAGS) -MMD -o $@ -c $< $(INCLUDES) $(ENV)
+	@$(CC) $(CFLAGS) -MMD -o $@ -c $< $(INCLUDES)
+	@/bin/echo -n "."
+
+$(OBJ_DIR)%.o: $(ENVIRON_DIR)%.c
+	@$(CC) $(CFLAGS) -MMD -o $@ -c $< $(INCLUDES)
 	@/bin/echo -n "."
 
 $(OBJ_DIR)%.o: $(HIGHLIGHT_DIR)%.c
-	@$(CC) $(CFLAGS) -MMD -o $@ -c $< $(INCLUDES) $(ENV)
+	@$(CC) $(CFLAGS) -MMD -o $@ -c $< $(INCLUDES)
 	@/bin/echo -n "."
 
 $(OBJ_DIR)%.o: $(HISTORY_DIR)%.c
-	@$(CC) $(CFLAGS) -MMD -o $@ -c $< $(INCLUDES) $(ENV)
+	@$(CC) $(CFLAGS) -MMD -o $@ -c $< $(INCLUDES)
 	@/bin/echo -n "."
 
 $(OBJ_DIR)%.o: $(KEYBOARD_DIR)%.c
-	@$(CC) $(CFLAGS) -MMD -o $@ -c $< $(INCLUDES) $(ENV)
+	@$(CC) $(CFLAGS) -MMD -o $@ -c $< $(INCLUDES)
 	@/bin/echo -n "."
 
 $(OBJ_DIR)%.o: $(LOG_DIR)%.c
-	@$(CC) $(CFLAGS) -MMD -o $@ -c $< $(INCLUDES) $(ENV)
-	@/bin/echo -n "."
-
-$(OBJ_DIR)%.o: $(PIPEX_DIR)%.c
-	@$(CC) $(CFLAGS) -MMD -o $@ -c $< $(INCLUDES) $(ENV)
+	@$(CC) $(CFLAGS) -MMD -o $@ -c $< $(INCLUDES)
 	@/bin/echo -n "."
 
 $(OBJ_DIR)%.o: $(PROMPT_DIR)%.c
-	@$(CC) $(CFLAGS) -MMD -o $@ -c $< $(INCLUDES) $(ENV)
-	@/bin/echo -n "."
-
-$(OBJ_DIR)%.o: $(REDIRECTION_DIR)%.c
-	@$(CC) $(CFLAGS) -MMD -o $@ -c $< $(INCLUDES) $(ENV)
+	@$(CC) $(CFLAGS) -MMD -o $@ -c $< $(INCLUDES)
 	@/bin/echo -n "."
 
 $(OBJ_DIR)%.o: $(SHELL_DIR)%.c
-	@$(CC) $(CFLAGS) -MMD -o $@ -c $< $(INCLUDES) $(ENV)
+	@$(CC) $(CFLAGS) -MMD -o $@ -c $< $(INCLUDES)
 	@/bin/echo -n "."
 
 $(OBJ_DIR)%.o: $(TERMINAL_DIR)%.c
-	@$(CC) $(CFLAGS) -MMD -o $@ -c $< $(INCLUDES) $(ENV)
+	@$(CC) $(CFLAGS) -MMD -o $@ -c $< $(INCLUDES)
 	@/bin/echo -n "."
 
 $(OBJ_DIR)%.o: $(TOKEN_DIR)%.c
-	@$(CC) $(CFLAGS) -MMD -o $@ -c $< $(INCLUDES) $(ENV)
+	@$(CC) $(CFLAGS) -MMD -o $@ -c $< $(INCLUDES)
 	@/bin/echo -n "."
 
 .PHONY: end
@@ -236,7 +219,7 @@ coverage: LIBRAIRIES += --coverage
 coverage: re
 
 .PHONY: scan
-scan: fclean
+scan: clean
 scan:
 	@echo "[$(NAME)] Scan-build launched"
 	scan-build -analyze-headers --force-analyze-debug-code -k \

@@ -16,10 +16,12 @@
 #include "ft_defines.h"
 #include "ft_shell_command.h"
 #include "ft_shell_constants.h"
+#include "ft_shell_environ.h"
 #include "ft_shell_history.h"
 #include "ft_shell_prompt.h"
 #include "ft_shell_terminal.h"
-#include "ft_shell_token.h"
+#include <stddef.h>
+#include <stdint.h>
 #include <sys/signal.h>
 #include <sys/types.h>
 
@@ -51,17 +53,16 @@
 typedef struct _align(128) s_shell
 {
     t_term       terminal;     /* Informations du terminal */
-    t_prompt     prompt;       /* Prompt du shell */
+    t_prompt     prompt;       /* Prompt du Shell */
     t_hist       history;      /* Informations d'historique */
     t_cmd       *command;      /* Historique de commandes et commande actuelle en tête */
     size_t       command_size; /* Taille de l'historique de commandes */
     uint8_t     *yank;         /* Copie */
     const char  *progname;     /* Nom du programme */
-    const char  *bin_path;     /* Chemins absolu des binaires */
-    char       **global_env;   /* Variables d'environnement globales */
-    char       **internal_env; /* Variables d'environnement internes */
+    t_env        environ;      /* Environnement du Shell */
     sighandler_t sigs[NSIG];   /* Tableau de sauvegarde des handlers des signaux */
-    uint32_t     options;      /* Options du shell */
+    uint32_t     options;      /* Options du Shell */
+    int          fd;           /* File Descriptor de lecture des données */
     int          quit;         /* Valeur définissant si le programme doit se terminer */
     int          status;       /* Valeur de sortie de la dernière commande exécutée */
 } t_shell;
@@ -71,7 +72,7 @@ typedef struct _align(128) s_shell
  *****************************************************************************/
 
 /**
- * @brief Fonction main du shell.
+ * @brief Fonction main du Shell.
  * @param argc Nombre d'arguments du programme
  * @param argv Liste des arguments du programme
  * @return 0 si OK.
@@ -120,32 +121,31 @@ void ft_shell_init(const char *progname, const char **environ,
  */
 void ft_shell_loop(t_shell *shell);
 
+/**
+ * @brief Cette fonction reçoit en entrée une chaîne de caractères représentant
+ * un chemin absolu pouvant comporter des '..' et des '.' (ex: "/home/user/work/../libft/./src").
+ * Elle parse cette chaîne et traduit les '..' et '.' pour en sortir une chaine sans (ex:
+ * "/home/user/libft/src").
+ * @param[in] path Chemin absolu commençant par un '/'
+ * @return Chemin absolu sans '..' ni '.'
+ */
+char *ft_shell_resolve_path(char *path);
+
 int       check_and_exec(const char **args, t_shell *shell);
 retcode_e fork_function(const char **args, t_shell *shell);
 char     *ft_get_path(char *pwd);
 
 /*****************************************************************************
- * FREE
+ * A SUPPRIMER
  ******************************************************************************/
-
-void ft_free_list(t_args **list);
-
-/*****************************************************************************
- * PARSER
- ******************************************************************************/
-
-char   *ft_lexical_analysis(char *command);
-int     ft_syntax_analysis(char **args);
-t_args *ft_argsnew(char **args, int type);
-
-/*****************************************************************************
- * PIPEX
- ******************************************************************************/
-
-void ft_pipex_or_exec(t_args *list, t_shell *shell);
-void ft_pipe_pipe(t_args *pipes, t_shell *shell);
-void ft_pipe_right(t_args *pipes, t_shell *shell);
-void ft_pipe_right_2(t_args *pipes, t_shell *shell);
-void ft_pipe_left(t_args *pipes, t_shell *shell);
+// void ft_free_list(t_args **list);
+// char   *ft_lexical_analysis(char *command);
+// int     ft_syntax_analysis(char **args);
+// t_args *ft_argsnew(char **args, int type);
+// void ft_pipex_or_exec(t_args *list, t_shell *shell);
+// void ft_pipe_pipe(t_args *pipes, t_shell *shell);
+// void ft_pipe_right(t_args *pipes, t_shell *shell);
+// void ft_pipe_right_2(t_args *pipes, t_shell *shell);
+// void ft_pipe_left(t_args *pipes, t_shell *shell);
 
 #endif

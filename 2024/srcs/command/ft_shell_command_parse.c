@@ -10,8 +10,8 @@
 /*                                                                          */
 /****************************************************************************/
 
+#include "ft_defines.h"
 #include "ft_shell_command.h"
-#include "ft_shell_token.h"
 #include "libft.h"
 #include <stddef.h>
 #include <stdint.h>
@@ -28,43 +28,45 @@ static uint8_t *ft_prepare_command(const t_cmd *command)
         {
             if (buffer[pos] == '\\' && buffer[pos + 1] == '\n')
             {
-                ft_memcpy(buffer + pos, buffer + pos + 2, command->len - pos); // bizarre attention
+                size_t len = command->len - pos - 2;
+
+                ft_memcpy(buffer + pos, buffer + pos + 2, len); // bizarre attention
+                buffer[pos + len] = '\0';
             }
             else
             {
                 pos++;
             }
         }
+        buffer[pos] = '\0';
     }
     return (buffer);
 }
 
-void ft_shell_command_parse(const t_cmd *command, const char *ifs)
+e_comparse ft_shell_command_parse(t_cmd *command, const char *ifs)
 {
-    uint8_t *buffer     = NULL;
-    t_token *token_list = NULL;
-    // char   **args       = NULL;
-    // char    *cmd        = NULL;
-    // t_args  *list       = NULL;
+    /* Si la commande vient de l'historique et qu'elle a été modifiée,
+     * on refait la reconnaissance de token */
+    if (TEST_BIT(command->option, COMMAND_HISTORIC_MODIFIED))
+    {
+        ft_command_token_remove_all(command->token);
+        command->token = NULL;
+    }
+    if (command->token == NULL)
+    {
+        uint8_t *buffer = NULL;
 
-    buffer = ft_prepare_command(command);
-    (void) ft_shell_token_recognition(&token_list,
-                                      buffer,
-                                      (const uint8_t *) "\n",
-                                      (const uint8_t *) ifs);
-    ft_shell_token_debug(token_list);
-    // if ((cmd = ft_lexical_analysis(shell->command->buffer))
-    // && (args = ft_split_whitespaces(cmd))
-    // && !ft_syntax_analysis(args))
-    // {
-    //     if ((list = ft_analyse(args, 0, shell)))
-    //     {
-    //         ft_run_parser(list, shell);
-    //     }
-    // }
-    free(buffer);
-    ft_shell_token_delete(token_list);
-    // ft_freetab(&args);
-    // free(cmd);
-    // ft_free_list(&list);
+        buffer = ft_prepare_command(command);
+        if (ifs != NULL && *ifs == '\0')
+        {
+            ifs = "  \t\n";
+        }
+        command->pos = ft_command_token_recognition(&command->token,
+                                                    (const uint8_t *) buffer,
+                                                    (const uint8_t *) "",
+                                                    (const uint8_t * const) ifs);
+        ft_command_token_debug(command->token, buffer);
+        free(buffer);
+    }
+    return (SHELL_COMMAND_PARSED);
 }

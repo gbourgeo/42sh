@@ -15,10 +15,11 @@
 
 #include "ft_defines.h"
 #include "ft_shell_command.h"
+#include "ft_shell_environ.h"
 #include <stddef.h>
 #include <stdint.h>
 
-#define SHELL_HISTORY_MAX_ELEMS "1024"
+#define SHELL_HISTORY_MAX_ELEMS "2"
 
 typedef struct _align(16) s_history
 {
@@ -36,14 +37,14 @@ void ft_shell_history_init(t_hist *history);
  * Initialise un contexte d'historique de commandes à partir d'un fichier.
  * @param command Pointeur sur la première commande
  * @param history Contexte de l'Historique du Shell
- * @param progname Nom du programme
  * @param environ Environnement du Shell
+ * @param progname Nom du programme
  * @return Dernière commande de la liste de commande
  */
-size_t ft_shell_history_parse_file(t_cmd       **command,
-                                   t_hist      *history,
-                                   const char  *progname,
-                                   const char **environ);
+size_t ft_shell_history_parse_file(t_cmd     **command,
+                                   t_hist     *history,
+                                   t_env      *environ,
+                                   const char *progname);
 
 /**
  * @brief Sauveagrde l'historique dans le fichier d'hitosique du Shell

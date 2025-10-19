@@ -24,15 +24,15 @@
 void ft_print_prev_command(t_shell *shell)
 {
     /* Pas de commande précédente */
-    if (shell->command->next == NULL)
+    if (shell->command->prev == NULL)
     {
         return;
     }
-    shell->command = shell->command->next;
+    shell->command = shell->command->prev;
+    shell->command->pos = shell->command->len;
+    ft_shell_terminal_calc_current_command_position(&shell->terminal, shell->command->pos);
     ft_shell_terminal_calc_end_command_position(&shell->terminal, shell->command->len);
     ft_shell_command_print(shell->command, &shell->terminal, COMMAND_PRINT_FROM_START);
-    /* Repositionne le curseur à la fin de la commande */
-    ft_term_move_cursor(&shell->terminal, MOVE_CURSOR_END);
 }
 
 /**
@@ -42,13 +42,13 @@ void ft_print_prev_command(t_shell *shell)
 void ft_print_next_command(t_shell *shell)
 {
     /* Pas de commande suivante */
-    if (shell->command->prev == NULL)
+    if (shell->command->next == NULL)
     {
         return;
     }
-    shell->command = shell->command->prev;
+    shell->command = shell->command->next;
+    shell->command->pos = shell->command->len;
+    ft_shell_terminal_calc_current_command_position(&shell->terminal, shell->command->pos);
     ft_shell_terminal_calc_end_command_position(&shell->terminal, shell->command->len);
     ft_shell_command_print(shell->command, &shell->terminal, COMMAND_PRINT_FROM_START);
-    /* Repositionne le curseur à la fin de la commande */
-    ft_term_move_cursor(&shell->terminal, MOVE_CURSOR_END);
 }

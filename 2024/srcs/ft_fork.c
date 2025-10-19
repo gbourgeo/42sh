@@ -13,6 +13,7 @@
 #include "ft_shell.h"
 #include "ft_shell_builtins.h"
 #include "ft_shell_constants.h"
+#include "ft_shell_environ.h"
 #include "ft_shell_log.h"
 #include "libft.h"
 #include <stddef.h>
@@ -40,12 +41,12 @@ static char *get_path_from_given_path(const char *cmd, t_shell *shell)
 
     if (*cmd == '.')
     {
-        tmp  = ft_strjoin(ft_getenv("PWD", shell), "/");
+        tmp  = ft_strjoin(ft_shell_env_get_value("PWD", &shell->environ), "/");
         path = ft_get_path(ft_strjoin(tmp, cmd));
         free(tmp);
         return (path);
     }
-    tmp  = ft_strjoin(ft_getenv("HOME", shell), ft_strchr(cmd, '/'));
+    tmp  = ft_strjoin(ft_shell_env_get_value("HOME", &shell->environ), ft_strchr(cmd, '/'));
     path = ft_get_path(tmp);
     free(tmp);
     return (path);
@@ -66,10 +67,10 @@ static char *get_path_from(const char *cmd, t_shell *shell)
     {
         return (check_path(get_path_from_given_path(cmd, shell)));
     }
-    path = ft_strsplit(ft_getenv("PATH", shell), ':');
+    path = ft_strsplit(ft_shell_env_get_value("PATH", &shell->environ), ':');
     if (path == NULL)
     {
-        path = ft_strsplit(shell->bin_path, ':');
+        path = ft_strsplit(shell->environ.bin_path, ':');
     }
     if (path == NULL)
     {
@@ -108,7 +109,7 @@ retcode_e fork_function(const char **args, t_shell *shell)
     }
     else if (pid == 0)
     {
-        execve(path, (char * const *) args, shell->global_env);
+        execve(path, (char * const *) args, shell->environ.public);
         ft_shell_log(SH_LOG_LEVEL_WARN, "Wrong argument: %s", args[0]);
     }
     else

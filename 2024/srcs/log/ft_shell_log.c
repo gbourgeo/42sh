@@ -10,13 +10,14 @@
 /*                                                                            */
 /* ************************************************************************** */
 
+#include "ft_shell_log.h"
 #include "ft_defines.h"
 #include "ft_dprintf.h"
 #include "ft_shell.h"
 #include "ft_shell_constants.h"
-#include "ft_shell_log.h"
 #include "ft_vdprintf.h"
 #include <stdarg.h>
+#include <stdint.h>
 #include <unistd.h>
 
 typedef struct _align(32) s_log
@@ -28,7 +29,8 @@ typedef struct _align(32) s_log
     int         quit;
 } t_log;
 
-void ft_shell_log(log_level_e log_level, const char *err_str, ...)
+void ft_shell_log(log_level_e log_level, const char *file, uint32_t line,
+                  const char *err_str, ...)
 {
     extern t_shell g_shell;
     static t_log   log_print[] = {
@@ -40,16 +42,29 @@ void ft_shell_log(log_level_e log_level, const char *err_str, ...)
     };
     va_list argp = { 0 };
 
-    if (log_level == SH_LOG_LEVEL_DBG && !TEST_BIT(g_shell.options, SHELL_DEBUG_MODE))
+    if (log_level == SHELL_LOG_LEVEL_DBG && !TEST_BIT(g_shell.options, SHELL_DEBUG_MODE))
     {
         return;
     }
     va_start(argp, err_str);
-    ft_dprintf(log_print[log_level].fd,
-               "%s%s %s: ",
-               log_print[log_level].color,
-               log_print[log_level].name,
-               g_shell.progname);
+    if (TEST_BIT(g_shell.options, SHELL_DEBUG_MODE))
+    {
+        ft_dprintf(log_print[log_level].fd,
+                   "%s%s %s: %s:%d ",
+                   log_print[log_level].color,
+                   log_print[log_level].name,
+                   g_shell.progname,
+                   file,
+                   line);
+    }
+    else
+    {
+        ft_dprintf(log_print[log_level].fd,
+                   "%s%s %s: ",
+                   log_print[log_level].color,
+                   log_print[log_level].name,
+                   g_shell.progname);
+    }
     ft_vdprintf(log_print[log_level].fd, err_str, argp);
     write(log_print[log_level].fd, "\033[0m\n", sizeof("\033[0m\n"));
     va_end(argp);

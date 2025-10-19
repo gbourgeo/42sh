@@ -61,7 +61,6 @@ typedef struct _align(8) s_cursor_position
 
 typedef struct _align(128) s_termcap
 {
-    int            fd;                               /* File Descriptor du terminal */
     struct termios ios;                              /* Caractéristiques du terminal à restorer en fin de programme */
     char           desc[2048];                       /* Description du terminal retourné par la fonction tgetent() */
     char          *capabilities[TERMCAP_TABLE_SIZE]; /* Capacités du terminal */
@@ -77,13 +76,6 @@ typedef struct _align(128) s_termcap
  * @param terminal Structure interne Terminal
  */
 void ft_shell_terminal_init(t_term *terminal);
-
-/**
- * @brief Nettoie la structure Terminal.
- * @param terminal Structure interne Terminal
- * @param options Options du terminal
- */
-void ft_shell_terminal_clear(const t_term *terminal, unsigned int options);
 
 /**
  * @brief Récupère les dimensions du terminal (lignes et colonnes).
@@ -146,20 +138,7 @@ void ft_shell_terminal_calc_end_command_position(t_term *terminal,
  * @param term Nom du terminal (variable d'environnement TERM)
  * @return 0 OK, 1 autrement.
  */
-int ft_shell_terminal_load_termcaps(t_term *terminal, const char *term);
-
-/**
- * @brief Fonction de chargement des nouveaux attributs du terminal.
- * @param terminal Structure interne Terminal
- * @return 0 OK, 1 autrement.
- */
-int ft_shell_terminal_change_attributes(const t_term *terminal);
-
-/**
- * @brief Fonction de restoration des attributs du terminal.
- * @param terminal Structure interne Terminal
- */
-void ft_shell_terminal_restore_attributes(const t_term *terminal);
+int ft_shell_terminal_load(t_term *terminal, const char *term);
 
 /**
  * @brief Efface la ligne et celles sous le curseur

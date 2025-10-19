@@ -12,6 +12,7 @@
 
 #include "ft_shell.h"
 #include "ft_shell_builtins.h"
+#include "ft_shell_environ.h"
 #include <stddef.h>
 
 void cd_change_pwds(const char *pwd, t_shell *shell)
@@ -20,13 +21,13 @@ void cd_change_pwds(const char *pwd, t_shell *shell)
 
     tmp[0] = "setenv";
     tmp[3] = NULL;
-    if (ft_getenv("OLDPWD", shell))
+    if (ft_shell_env_get_value("OLDPWD", &shell->environ))
     {
         tmp[1] = "OLDPWD";
-        tmp[2] = ft_getenv("PWD", shell);
+        tmp[2] = ft_shell_env_get_value("PWD", &shell->environ);
         ft_setenv(tmp, shell);
     }
-    if (ft_getenv("PWD", shell))
+    if (ft_shell_env_get_value("PWD", &shell->environ))
     {
         tmp[1] = "PWD";
         tmp[2] = pwd;

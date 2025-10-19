@@ -22,7 +22,7 @@ void ft_clear_modes(t_shell *shell)
 
     if (shell->command->harea != NULL)
     {
-        shell->command->harea = ft_highlight_remove_all(shell->command->harea); /* Supprime les zones de texte surligné de la commande */
+        shell->command->harea = ft_command_highlight_remove_all(shell->command->harea); /* Supprime les zones de texte surligné de la commande */
         print                 = 1;
     }
     if (TEST_BIT(shell->command->option, COMMAND_HIGHLIGHT_MODE))

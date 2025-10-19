@@ -10,7 +10,6 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "ft_shell.h"
 #include "ft_shell_token.h"
 #include "libft.h"
 #include <stddef.h>

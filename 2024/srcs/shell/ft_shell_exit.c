@@ -10,27 +10,33 @@
 /*                                                                            */
 /* ************************************************************************** */
 
+#include "ft_defines.h"
 #include "ft_shell.h"
 #include "ft_shell_command.h"
+#include "ft_shell_constants.h"
+#include "ft_shell_environ.h"
 #include "ft_shell_history.h"
+#include "ft_shell_log.h"
 #include "ft_shell_prompt.h"
 #include "ft_shell_terminal.h"
-#include "libft.h"
 #include <signal.h>
 #include <stdlib.h>
+#include <termios.h>
 
 void ft_shell_exit(t_shell *shell)
 {
     int iter = 1;
 
-    ft_shell_terminal_clear(&shell->terminal, shell->options);
+    if (TEST_BIT(shell->options, SHELL_TERMATTR_LOADED)
+     && tcsetattr(shell->fd, TCSANOW, &shell->terminal.ios) == -1)
+    {
+        ft_shell_log(SH_LOG_LEVEL_FATAL, "failed to restore terminal attributes");
+    }
     ft_shell_prompt_clear(&shell->prompt);
     ft_shell_history_save_to_file(&shell->history, shell->command);
-    ft_shell_command_delete_list(shell->command);
+    ft_shell_command_delete_all(shell->command);
     free(shell->yank);
-    free((void *) shell->bin_path);
-    ft_freetab(&shell->global_env);
-    ft_freetab(&shell->internal_env);
+    ft_shell_env_free(&shell->environ);
     while (iter < NSIG)
     {
         if (shell->sigs[iter - 1] != SIG_ERR)

@@ -15,6 +15,7 @@
 
 #include "ft_defines.h"
 #include "ft_shell.h"
+#include <stdint.h>
 
 typedef enum env_options
 {

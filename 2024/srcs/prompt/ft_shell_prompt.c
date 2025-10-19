@@ -12,9 +12,8 @@
 
 #include "ft_shell_prompt.h"
 #include "ft_defines.h"
-#include "ft_shell.h"
-#include "ft_shell_builtins.h"
 #include "ft_shell_constants.h"
+#include "ft_shell_environ.h"
 #include "ft_shell_terminal.h"
 #include "libft.h"
 #include <stddef.h>
@@ -164,10 +163,8 @@ static int ft_shell_prompt_handle_str(char *prompt, size_t *prompt_len, const ch
     return (0);
 }
 
-void ft_shell_prompt_create(t_prompt *prompt,
-                            void     *shell_ctx)
+void ft_shell_prompt_create(t_prompt *prompt, t_env *environ)
 {
-    t_shell    *shell                               = NULL;
     const char *psone                               = NULL;
     char        prompt_str[SHELL_PROMPT_MAX_LENGTH] = { 0 };
     size_t      prompt_len                          = 0;
@@ -175,18 +172,16 @@ void ft_shell_prompt_create(t_prompt *prompt,
     size_t      pos                                 = 0;
     size_t      last_pos                            = 0;
 
-    shell = (t_shell *) shell_ctx;
     ft_freestr(&prompt->str);
     prompt->real_len    = 0;
     prompt->printed_len = 0;
     prompt->print       = 1;
+    psone               = ft_shell_env_get_value("PS1", environ);
 
-    psone = ft_getenv("PS1", shell);
     if (psone == NULL)
     {
         return;
     }
-
     while (psone[pos] != '\0')
     {
         if (psone[pos] == '%')
@@ -208,16 +203,18 @@ void ft_shell_prompt_create(t_prompt *prompt,
             }
             else if (psone[pos] == 'p') // Nom du programme
             {
-                if (ft_shell_prompt_handle_str(prompt_str, &prompt_len, shell->progname) != 0)
+                const char *progname = ft_shell_env_get_value("SHELL", environ);
+
+                if (ft_shell_prompt_handle_str(prompt_str, &prompt_len, progname) != 0)
                 {
                     // Message d'erreur ?
                     break;
                 }
-                prompt_printed_len += ft_strlen(shell->progname);
+                prompt_printed_len += ft_strlen(progname);
             }
             else if (psone[pos] == 'u') // Nom d'utilisateur
             {
-                const char *user = ft_getenv("USER", shell);
+                const char *user = ft_shell_env_get_value("USER", environ);
 
                 if (ft_shell_prompt_handle_str(prompt_str, &prompt_len, user) != 0)
                 {
@@ -228,8 +225,8 @@ void ft_shell_prompt_create(t_prompt *prompt,
             }
             else if (psone[pos] == 'w') // Répertoire courant
             {
-                const char *pwd  = ft_getenv("PWD", shell);
-                const char *home = ft_getenv("HOME", shell);
+                const char *pwd  = ft_shell_env_get_value("PWD", environ);
+                const char *home = ft_shell_env_get_value("HOME", environ);
 
                 if (ft_strncmp(pwd, home, ft_strlen(home)) == 0)
                 {

@@ -13,7 +13,7 @@
 #include "ft_defines.h"
 #include "ft_shell.h"
 #include "ft_shell_command.h"
-#include "ft_shell_constants.h"
+#include "ft_shell_key_combination.h"
 #include "ft_shell_terminal.h"
 #include "ft_shell_termkeys.h"
 #include "libft.h"
@@ -38,44 +38,42 @@ static void ft_key_test(t_shell *shell _unused)
 static size_t ft_key_special(const uint8_t *buffer, size_t iter, size_t size, t_shell *shell)
 {
     static t_key keys[] = {
-        { { 0x03 },                               1, ft_control_c                     }, /* Ctrl + C             */
-        { { 0x04 },                               1, ft_control_d                     }, /* Ctrl + D             */
-        { { 0x08 },                               1, ft_delete_word_left              }, /* Ctrl + Backspace     */
-        { { 0x0A },                               1, ft_shell_exec_command            }, /* Enter                */
-        { { 0x0C },                               1, ft_highlight_mode                }, /* Ctrl + L             */
-        { { 0x10 },                               1, ft_highlight_paste               }, /* Ctrl + P             */
-        { { 0x19 },                               1, ft_highlight_yank                }, /* Ctrl + Y             */
-        // { { 0x1B, 0x5B, 0x31, 0x3b, 0x32, 0x43 }, 6, ft_move_shift_right              }, /* Shift + Right        */
-        // { { 0x1B, 0x5B, 0x31, 0x3b, 0x32, 0x44 }, 6, ft_move_shift_left               }, /* Shift + Left         */
-        { { 0x1B, 0x5B, 0x31, 0x3B, 0x33, 0x41 }, 6, ft_move_cursor_up                }, /* Alt + Up             */
-        { { 0x1B, 0x5B, 0x31, 0x3B, 0x33, 0x42 }, 6, ft_move_cursor_down              }, /* Alt + Down           */
-        { { 0x1B, 0x5B, 0x31, 0x3B, 0x33, 0x43 }, 6, ft_move_word_right               }, /* Alt + Right          */
-        { { 0x1B, 0x5B, 0x31, 0x3B, 0x33, 0x44 }, 6, ft_move_word_left                }, /* Alt + Left           */
-        { { 0x1B, 0x5B, 0x31, 0x3B, 0x35, 0x41 }, 6, ft_move_cursor_up                }, /* Ctrl + Up            */
-        { { 0x1B, 0x5B, 0x31, 0x3B, 0x35, 0x42 }, 6, ft_move_cursor_down              }, /* Ctrl + Down          */
-        { { 0x1B, 0x5B, 0x31, 0x3B, 0x35, 0x43 }, 6, ft_move_word_right               }, /* Ctrl + Right         */
-        { { 0x1B, 0x5B, 0x31, 0x3B, 0x35, 0x44 }, 6, ft_move_word_left                }, /* Ctrl + Left          */
-        { { 0x1B, 0x5B, 0x33, 0x3B, 0x33, 0x7E }, 6, ft_delete_word_right             }, /* Alt + Delete         */
-        { { 0x1B, 0x5B, 0x33, 0x7E },             4, ft_delete_character_right        }, /* Delete               */
-        { { 0x1B, 0x5B, 0x41 },                   3, ft_print_prev_command            }, /* Arrow Up             */
-        { { 0x1B, 0x5B, 0x42 },                   3, ft_print_next_command            }, /* Arrow Down           */
-        { { 0x1B, 0x5B, 0x43 },                   3, ft_move_cursor_right             }, /* Arrow Right          */
-        { { 0x1B, 0x5B, 0x44 },                   3, ft_move_cursor_left              }, /* Arrow Left           */
-        { { 0x1B, 0x5B, 0x46 },                   3, ft_move_cursor_end_of_command    }, /* End                  */
-        { { 0x1B, 0x5B, 0x48 },                   3, ft_move_cursor_start_of_commmand }, /* Home                 */
-        { { 0x1B, 0x68 },                         2, ft_highlight_mode                }, /* Alt + H              */
-        { { 0x1B, 0x70 },                         2, ft_highlight_paste               }, /* Alt + P              */
-        { { 0x1B, 0x79 },                         2, ft_highlight_yank                }, /* Alt + Y              */
-        { { 0x1B, 0x7F },                         2, ft_delete_word_left              }, /* Alt + Backspace      */
-        { { 0x7F },                               1, ft_delete_character_left         }, /* Backspace            */
-#if defined(__APPLE__) || defined(__MACH__)
-        { { 0x17 },                               1, ft_delete_word_left              }, /* Alt + Backspace      */
-        { { 0x1B, 0x62 },                         2, ft_move_word_left                }, /* Alt + Left           */
-        { { 0x1B, 0x5b, 0x33, 0x3b, 0x35, 0x7e }, 6, ft_delete_word_right             }, /* Ctrl + Delete        */
-        { { 0x1B, 0x66 },                         2, ft_move_word_right               }, /* Alt + Right          */
-        { { 0x1B, 0x0A },                         2, ft_key_test                      }, /* Alt + Enter          */
-        { { 0x1B },                               1, ft_clear_modes                   }, /* Esc                  */
-#endif
+        /* Longueur de 6 */
+        { KEYBOARD_CTRL_UP,        ft_move_cursor_up                }, /* Ctrl + Up         */
+        { KEYBOARD_CTRL_DOWN,      ft_move_cursor_down              }, /* Ctrl + Down       */
+        { KEYBOARD_CTRL_RIGHT,     ft_move_word_right               }, /* Ctrl + Right      */
+        { KEYBOARD_CTRL_LEFT,      ft_move_word_left                }, /* Ctrl + Left       */
+        { KEYBOARD_CTRL_DELETE,    ft_delete_word_right             }, /* Ctrl + Delete     */
+        { KEYBOARD_ALT_UP,         ft_move_cursor_up                }, /* Alt + Up          */
+        { KEYBOARD_ALT_DOWN,       ft_move_cursor_down              }, /* Alt + Down        */
+        { KEYBOARD_ALT_DELETE,     ft_delete_word_right             }, /* Alt + Delete      */
+        /* Longueur de 4 */
+        { KEYBOARD_DELETE,         ft_delete_character_right        }, /* Delete            */
+        /* Longueur de 3 */
+        { KEYBOARD_UP,             ft_print_prev_command            }, /* Arrow Up          */
+        { KEYBOARD_DOWN,           ft_print_next_command            }, /* Arrow Down        */
+        { KEYBOARD_RIGHT,          ft_move_cursor_right             }, /* Arrow Right       */
+        { KEYBOARD_LEFT,           ft_move_cursor_left              }, /* Arrow Left        */
+        { KEYBOARD_END,            ft_move_cursor_end_of_command    }, /* End               */
+        { KEYBOARD_HOME,           ft_move_cursor_start_of_commmand }, /* Home              */
+        /* Longueur de 2 */
+        { KEYBOARD_ALT_RIGHT,      ft_move_word_right               }, /* Alt + Right       */
+        { KEYBOARD_ALT_LEFT,       ft_move_word_left                }, /* Alt + Left        */
+        { KEYBOARD_ALT_H,          ft_highlight_mode                }, /* Alt + H           */
+        { KEYBOARD_ALT_P,          ft_highlight_paste               }, /* Alt + P           */
+        { KEYBOARD_ALT_Y,          ft_highlight_yank                }, /* Alt + Y           */
+        { KEYBOARD_ALT_ENTER,      ft_key_test                      }, /* Alt + Enter       */
+        /* Longueur de 1 */
+        { KEYBOARD_CTRL_C,         ft_control_c                     }, /* Ctrl + C          */
+        { KEYBOARD_CTRL_D,         ft_control_d                     }, /* Ctrl + D          */
+        { KEYBOARD_CTRL_BACKSPACE, ft_delete_word_left              }, /* Ctrl + Backspace  */
+        { KEYBOARD_CTRL_L,         ft_highlight_mode                }, /* Ctrl + L          */
+        { KEYBOARD_CTRL_P,         ft_highlight_paste               }, /* Ctrl + P          */
+        { KEYBOARD_CTRL_Y,         ft_highlight_yank                }, /* Ctrl + Y          */
+        { KEYBOARD_ALT_BACKSPACE,  ft_delete_word_left              }, /* Alt + Backspace   */
+        { KEYBOARD_BACKSPACE,      ft_delete_character_left         }, /* Backspace         */
+        { KEYBOARD_ENTER,          ft_shell_exec_command            }, /* Enter             */
+        { KEYBOARD_ESC,            ft_clear_modes                   }, /* Esc               */
     };
     size_t jter = 0;
 
@@ -100,25 +98,22 @@ void ft_key_analyser(const uint8_t *buffer, size_t len, t_shell *shell)
     while (iter < len)
     {
         /* Est-ce une combinaison de touche spéciale ? */
-        if (TEST_BIT(shell->options, SHELL_INTERACTIVE_MODE))
+        size_t found = ft_key_special(buffer, iter, len, shell);
+        if (found != 0)
         {
-            size_t found = ft_key_special(buffer, iter, len, shell);
-            if (found != 0)
-            {
-                iter += found;
-                continue;
-            }
-            ft_command_highlight_move_areas(shell->command, SHELL_HIGHLIGHTED_AREA_ADD_CHAR, 1);
+            iter += found;
+            continue;
         }
+        /* Déplacement des Zones de texte surligné */
+        ft_command_highlight_move_areas(shell->command, SHELL_HIGHLIGHTED_AREA_ADD_CHAR, 1);
         /* Insertion du caractère dans le buffer de commande */
         ft_shell_command_insert_character(shell->command, buffer[iter]);
-        /* Déplacement du curseur */
-        if (TEST_BIT(shell->options, SHELL_INTERACTIVE_MODE))
-        {
-            ft_shell_terminal_calc_current_command_position(&shell->terminal, shell->command->pos);
-            ft_shell_terminal_calc_end_command_position(&shell->terminal, shell->command->len);
-            ft_shell_command_print(shell->command, &shell->terminal, COMMAND_PRINT_FROM_POS_LESS);
-        }
+        /* Calcul de la position du curseur courante */
+        ft_shell_terminal_calc_current_command_position(&shell->terminal, shell->command->pos);
+        /* Calcul de la position du curseur en fin de commande */
+        ft_shell_terminal_calc_end_command_position(&shell->terminal, shell->command->len);
+        /* Affichage de la commande et déplacement du curseur */
+        ft_shell_command_print(shell->command, &shell->terminal, COMMAND_PRINT_FROM_POS_LESS);
         iter++;
     }
 }

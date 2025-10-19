@@ -14,53 +14,77 @@
 #include "ft_shell.h"
 #include "ft_shell_command.h"
 #include "ft_shell_termkeys.h"
+#include "ft_shell_terminal.h"
 #include "libft.h"
 #include <stdint.h>
 #include <stdlib.h>
 
-void ft_highlight_yank(t_shell *shell)
+/**
+ * @brief Calcule la longueur de toutes les zones de texte surligné.
+ * @param harea Liste de zone de texte surligné
+ * @return La longueur totale des zones de texte surligné.
+ */
+static size_t ft_highlight_len(t_higharea *harea)
 {
-    t_higharea *harea = NULL;
-    uint8_t    *yank  = NULL;
-    size_t      len   = 0;
+    size_t len = 0;
 
-    if (harea == NULL)
-    {
-        return;
-    }
-    /* Réorganisation des zones */
-    shell->command->harea = ft_highlight_sort_area(shell->command->harea);
-    harea                 = shell->command->harea;
-    /* Suppression de l'ancienne copie */
-    ft_freestr((char **) &shell->yank);
     /* Calcul de la nouvelle taille de la copie */
     while (harea != NULL)
     {
         len += (harea->head - harea->tail) + (len != 0);
         harea = harea->next;
     }
-    /* Création de la copie */
-    yank    = (uint8_t *) malloc(len);
-    yank[0] = '\0';
-    harea   = shell->command->harea;
-    len     = 0;
+    return (len);
+}
+
+/**
+ * @brief Copie des zones de texte surligné dans le buffer de destination.
+ * @param dst Buffer de destination
+ * @param src Buffer source
+ * @param harea Zones de texte surligné
+ */
+static void ft_highlight_copy(uint8_t *dst, uint8_t *src, t_higharea *harea)
+{
+    size_t pos = 0;
+
     while (harea != NULL)
     {
-        if (yank[0] != '\0')
+        if (pos != 0)
         {
-            yank[len] = ' ';
-            len++;
+            dst[pos] = ' ';
+            pos++;
         }
-        ft_memcpy(yank + len, shell->command->buffer + harea->tail, harea->head - harea->tail);
-        len += harea->head - harea->tail;
+        ft_memcpy(dst + pos, src + harea->tail, harea->head - harea->tail);
+        pos += harea->head - harea->tail;
         harea = harea->next;
     }
-    yank[len]   = '\0';
-    shell->yank = yank;
-    /* Désactive le mode de surlignage */
-    REMOVE_BIT(shell->command->option, COMMAND_HIGHLIGHT_MODE);
+    dst[pos] = '\0';
+}
+
+void ft_highlight_yank(t_shell *shell)
+{
+    size_t length = 0;
+    /* Highlight mode : actif */
+    if (TEST_BIT(shell->command->option, COMMAND_HIGHLIGHT_MODE))
+    {
+        REMOVE_BIT(shell->command->option, COMMAND_HIGHLIGHT_MODE);
+        ft_term_clear_modes(&shell->terminal);
+        shell->command->harea = ft_command_highlight_sort_area(shell->command->harea);
+    }
+    shell->command->harea = ft_command_highlight_first(shell->command->harea);
+    length                = ft_highlight_len(shell->command->harea);
+    if (shell->command->harea == NULL || length == 0)
+    {
+        return;
+    }
+    /* Suppression de l'ancienne copie */
+    ft_freestr((char **) &shell->yank);
+    /* Création de la copie */
+    shell->yank = (uint8_t *) malloc(length);
+    /* Copie */
+    ft_highlight_copy(shell->yank, shell->command->buffer, shell->command->harea);
     /* Suppression des zones surlignées */
-    shell->command->harea = ft_highlight_remove_all(shell->command->harea);
+    shell->command->harea = ft_command_highlight_remove_all(shell->command->harea);
     /* Réécriture de la ligne de commande sans surlignage */
     ft_shell_command_print(shell->command, &shell->terminal, COMMAND_PRINT_FROM_START);
 }

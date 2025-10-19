@@ -51,7 +51,7 @@ static void postexec_print_info(debug_t *dbg, t_term *terminal, const t_cmd *com
 {
     if (terminal->end.line + dbg->lines_printed > terminal->max_line)
     {
-        int lines = (terminal->end.line + dbg->lines_printed) - terminal->max_line - 1;
+        int lines = (terminal->end.line + dbg->lines_printed) - terminal->max_line;
         terminal->start.line -= lines;
         terminal->current.line -= lines;
         terminal->end.line -= lines;
@@ -186,7 +186,7 @@ static void historic_print_info(debug_t *dbg, const t_shell *shell)
     ft_term_move_cursor_down(&shell->terminal);     /* Positionne le curseur au début de la ligne suivante */
     ft_term_clear_line_and_under(&shell->terminal); /* Efface la ligne courante et celles du dessous */
     /* Position de la commande courante dans l'historique */
-    if (cmd->prev != NULL)
+    if (cmd->next != NULL)
     {
         while (hist != NULL)
         {
@@ -195,7 +195,7 @@ static void historic_print_info(debug_t *dbg, const t_shell *shell)
             {
                 break;
             }
-            hist = hist->next;
+            hist = hist->prev;
         }
     }
     /* Remplissage du buffer jusqu'à terminal.max_column */
@@ -209,9 +209,9 @@ static void historic_print_info(debug_t *dbg, const t_shell *shell)
                                   hist_pos - 1,
                                   cmd->prev->buffer);
     }
-    if (cmd->prev == NULL)
+    if (cmd->next == NULL)
     {
-        cmd      = cmd->next;
+        cmd      = cmd->prev;
         hist_pos = 1;
     }
     /* Affichage de l'historique */
@@ -224,7 +224,7 @@ static void historic_print_info(debug_t *dbg, const t_shell *shell)
                                   hist_pos,
                                   cmd->buffer);
         hist_pos++;
-        cmd = cmd->next;
+        cmd = cmd->prev;
     }
     /* Affichage du buffer */
     if (buff_print >= shell->terminal.max_column)

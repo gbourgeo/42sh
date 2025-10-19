@@ -9,8 +9,14 @@ CompileFlags:
     - "-Wall"
     - "-Werror"
     - "-Wextra"
+    - "-Wpedantic"
+    - "-Wshadow"
+    - "-Wundef"
+    - "-Wconversion"
+    - "-Wunreachable-code"
+    - "-O2" # Recommended optimizations
   # Compilateur utilisé
-  Compiler: gcc
+  Compiler: clang
 Index:
   # Indexation des symboles des fichiers
   Background: Build # Skip
@@ -28,6 +34,7 @@ Diagnostics:
       - "cppcoreguidelines*"
       - "*braces-around-statements"
       - "readability-magic-numbers"
+      - "altera-unroll-loops"
     # Les vérifications qui peuvent ralentir clangd:
     #   Strict (vérifications rapides uniquement)
     #   Loose (vérifications rapides + celles non reconnues comme étant très lentes)

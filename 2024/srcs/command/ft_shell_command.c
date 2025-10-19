@@ -22,16 +22,11 @@
 /******************************************************************************
  * FONCTIONS UTILES POUR LA COMMANDE
  ******************************************************************************/
-static size_t ft_shell_command_save_form_historic(t_cmd **command,
-                                                  size_t  historic_size,
-                                                  long    historic_max_size);
-static size_t ft_shell_command_save_form_shell(t_cmd **command,
-                                               size_t  historic_size,
-                                               long    historic_max_size);
-static void   ft_shell_command_delete(t_cmd *command);
+static void ft_shell_command_delete(t_cmd *command);
 
 t_cmd *ft_shell_command_new(const uint8_t *line,
-                            t_cmd         *command_list,
+                            t_cmd         *prev,
+                            t_cmd         *next,
                             e_newcmdopt    option)
 {
     t_cmd *cmd = (t_cmd *) malloc(sizeof(*cmd));
@@ -60,54 +55,78 @@ t_cmd *ft_shell_command_new(const uint8_t *line,
     cmd->pos    = cmd->len;
     cmd->option = 0;
     cmd->harea  = NULL;
-    cmd->prev   = NULL;
-    cmd->next   = command_list;
-    if (command_list != NULL)
+    cmd->token  = NULL;
+    cmd->prev   = prev;
+    cmd->next   = next;
+    if (prev != NULL)
     {
-        command_list->prev = cmd;
+        prev->next = cmd;
     }
-
+    if (next != NULL)
+    {
+        next->prev = cmd;
+    }
     return (cmd);
 }
 
-size_t ft_shell_command_save(t_cmd      **command,
-                             size_t       historic_size,
-                             long         historic_max_size,
-                             e_savecmdopt option)
+size_t ft_shell_command_save(t_cmd *command,
+                             size_t historic_size,
+                             long   historic_max_size)
 {
-    switch (option)
+    uint8_t *line  = command->buffer;
+    t_cmd   *cmd   = NULL;
+    t_cmd   *first = NULL;
+
+    /* Pas de sauvegarde
+     * Si la ligne est vide ou commence par un espace blanc */
+    if (line[0] == '\0' || ft_iswhitespace((char) line[0]))
     {
-        case SHELL_COMMAND_SAVE_FROM_HISTORIC:
+        /* Rien de plus à faire ici */
+        return (historic_size);
+    }
+    first = ft_shell_command_get_first(command);
+    /* Recherche de doublon dans l'historique */
+    cmd   = ft_shell_command_get_last(command);
+    while (cmd->next != NULL)
+    {
+        /* Ligne déjà existante, on place la commande au début de la liste */
+        if (ft_ustrcmp(cmd->origin, line) == 0)
         {
-            historic_size = ft_shell_command_save_form_historic(command,
-                                                                historic_size,
-                                                                historic_max_size);
-            break;
+            /* Si c'est déjà le premier élément de la liste, rien à faire */
+            if (cmd->next->next == NULL)
+            {
+                return (historic_size);
+            }
+            /* Sinon on insère la commande au début de la liste */
+            if (cmd->prev != NULL)           /* *************************************** */
+            {                                /* ... <-> C <-- CMD <-> A <-> ... -> NULL */
+                cmd->prev->next = cmd->next; /*           \--------->                   */
+            }                                /* ... <-> C <-- CMD --> A <-> ... -> NULL */
+            cmd->next->prev = cmd->prev;     /*           <--------->                   */
+            cmd->next       = first;         /*                   CMD --> FIRST -> NULL */
+            cmd->prev       = first->prev;   /*           ... <-- CMD --> FIRST -> NULL */
+            cmd->prev->next = cmd;           /*           ... <-> CMD --> FIRST -> NULL */
+            first->prev     = cmd;           /*           ... <-> CMD <-> FIRST -> NULL */
+            return (historic_size);          /* *************************************** */
         }
-        case SHELL_COMMAND_SAVE_FROM_INTERACTIVE_MODE:
-        {
-            historic_size = ft_shell_command_save_form_shell(command,
-                                                             historic_size,
-                                                             historic_max_size);
-            break;
-        }
+        cmd = cmd->next;
+    }
+    /* Pas de doublon, on créé une nouvelle commande */
+    (void) ft_shell_command_new(line,
+                                first->prev,
+                                first,
+                                SHELL_COMMAND_NEW_DUPLICATE_LINE);
+    historic_size++;
+    /* Suppression des éléments en trop */
+    while ((long) historic_size > historic_max_size)
+    {
+        ft_shell_command_remove_last(&first->prev);
+        historic_size--;
     }
     return (historic_size);
 }
 
 t_cmd *ft_shell_command_get_first(const t_cmd *command_list)
-{
-    if (command_list != NULL)
-    {
-        while (command_list->prev != NULL)
-        {
-            command_list = command_list->prev;
-        }
-    }
-    return ((t_cmd *) command_list);
-}
-
-t_cmd *ft_shell_command_get_last(const t_cmd *command_list)
 {
     while (command_list != NULL)
     {
@@ -116,6 +135,19 @@ t_cmd *ft_shell_command_get_last(const t_cmd *command_list)
             return ((t_cmd *) command_list);
         }
         command_list = command_list->next;
+    }
+    return ((t_cmd *) command_list);
+}
+
+t_cmd *ft_shell_command_get_last(const t_cmd *command_list)
+{
+    while (command_list != NULL)
+    {
+        if (command_list->prev == NULL)
+        {
+            return ((t_cmd *) command_list);
+        }
+        command_list = command_list->prev;
     }
     return ((t_cmd *) command_list);
 }
@@ -275,9 +307,21 @@ void ft_shell_command_print(const t_cmd  *command,
 
 t_cmd *ft_shell_command_reinit(t_cmd *command)
 {
-    t_cmd *first = ft_shell_command_get_first(command);
-
-    command = first;
+    command = ft_shell_command_get_last(command);
+    /* Réinitialisation des Commandes de l'historique */
+    while (command->next != NULL)
+    {
+        if (TEST_BIT(command->option, COMMAND_HISTORIC_MODIFIED))
+        {
+            command->len = ft_ustrlen(command->origin);
+            ft_memcpy(command->buffer, command->origin, command->len + 1);
+        }
+        command->option = 0;
+        command->pos    = command->len;
+        command->harea  = ft_command_highlight_remove_all(command->harea);
+        command         = command->next;
+    }
+    /* Réinitialisation de la première Commande (qui ne fait pas partie de l'historique) */
     if (command->size != SHELL_COMMAND_BUFFER_HOP)
     {
         free((void *) command->buffer);
@@ -288,21 +332,8 @@ t_cmd *ft_shell_command_reinit(t_cmd *command)
     command->len    = 0;
     command->pos    = 0;
     command->option = 0;
-    command->harea  = ft_highlight_remove_all(command->harea);
-    /* Réinitialisation de l'historique */
-    while (command->next != NULL)
-    {
-        command = command->next;
-        if (TEST_BIT(command->option, COMMAND_HISTORIC_MODIFIED))
-        {
-            command->len = ft_ustrlen(command->origin);
-            ft_memcpy(command->buffer, command->origin, command->len + 1);
-        }
-        command->option = 0;
-        command->pos    = command->len;
-        command->harea  = ft_highlight_remove_all(command->harea);
-    }
-    return (first);
+    command->harea  = ft_command_highlight_remove_all(command->harea);
+    return (command);
 }
 
 void ft_shell_command_realloc(t_cmd *command)
@@ -315,16 +346,16 @@ void ft_shell_command_realloc(t_cmd *command)
     free(old);
 }
 
-void ft_shell_command_delete_list(t_cmd *command_list)
+void ft_shell_command_delete_all(t_cmd *command)
 {
-    t_cmd *next = NULL;
+    t_cmd *prev = NULL;
 
-    command_list = ft_shell_command_get_first(command_list);
-    while (command_list != NULL)
+    command = ft_shell_command_get_first(command);
+    while (command != NULL)
     {
-        next = command_list->next;
-        ft_shell_command_delete(command_list);
-        command_list = next;
+        prev = command->prev;
+        ft_shell_command_delete(command);
+        command = prev;
     }
 }
 
@@ -336,15 +367,12 @@ static void ft_shell_command_delete(t_cmd *command)
 {
     free((void *) command->origin);
     free((void *) command->buffer);
-    ft_highlight_remove_all(command->harea);
+    ft_command_highlight_remove_all(command->harea);
+    ft_command_token_remove_all(command->token);
     free(command);
 }
 
-/**
- * @brief Supprime la dernière commande de la liste
- * @param history Contexte de l'historique du Shell
- */
-static void ft_shell_command_remove_last(t_cmd **command)
+void ft_shell_command_remove_last(t_cmd **command)
 {
     t_cmd *last = ft_shell_command_get_last(*command);
 
@@ -352,415 +380,13 @@ static void ft_shell_command_remove_last(t_cmd **command)
     {
         return;
     }
-    if (last->prev == NULL) /* Dernier élément de la liste */
+    if (last->next == NULL) /* Dernier élément de la liste */
     {
         *command = NULL;
     }
     else
     {
-        *command         = last->prev;
-        last->prev->next = NULL;
+        last->next->prev = NULL;
     }
     ft_shell_command_delete(last);
-}
-
-static size_t ft_shell_command_save_form_historic(t_cmd **command,
-                                                  size_t  historic_size,
-                                                  long    historic_max_size)
-{
-    t_cmd   *cmd    = *command;
-    uint8_t *buffer = cmd->buffer;
-
-    /* Si la ligne est vide ou commence par un espace blanc */
-    if (buffer[0] == '\0' || ft_iswhitespace((char) buffer[0]))
-    {                                   /* ********************************* */
-                                        /* NULL <- COMMAND <-> A <-----> ... */
-                                        /*          (CMD)                    */
-                                        /* ********************************* */
-        *command = (*command)->next;    /* NULL <--- CMD <-> COMMAND <-> ... */
-                                        /* ********************************* */
-        if (*command != NULL)           /*                                   */
-        {                               /* NULL <--- CMD -->                 */
-            (*command)->prev = NULL;    /*      <----------- COMMAND <-> ... */
-        }                               /* ********************************* */
-        ft_shell_command_delete(cmd);   /*       *\ C\M\D \*                 */
-                                        /* ********************************* */
-        return (historic_size);
-    }
-    /* Recherche de doublon dans l'historique */
-    while (cmd->next != NULL)
-    {
-        cmd = cmd->next;
-        /**
-         * Doublon trouvé, on place le doublon au début de la liste et
-         * on supprime la première commande.
-         */
-        if (ft_ustrcmp(buffer, cmd->origin) == 0)
-        {
-            /* Si c'est le premier élément de la liste */
-            if (cmd->prev == *command)          /* ******************************* */
-            {                                   /* NULL <- COMMAND <-> CMD <-> ... */
-                                                /* ******************************* */
-                cmd      = *command;            /* NULL <-   CMD   <-> ...         */
-                                                /*      <- COMMAND <-> ...         */
-                                                /* ******************************* */
-                *command = (*command)->next;    /* NULL <- CMD <-> COMMAND <-> ... */
-                                                /* ******************************* */
-                if (*command != NULL)           /*                                 */
-                {                               /*      <--- CMD ->                */
-                    (*command)->prev = NULL;    /* NULL <--------- COMMAND <-> ... */
-                }                               /* ******************************* */
-                ft_shell_command_delete(cmd);   /*       *\ C\M\D \*               */
-                                                /* ******************************* */
-                return (historic_size);
-            }
-            /* Sinon on insert la commande au début */
-                                                /* ****************************************** */
-            cmd->prev->next = cmd->next;        /* NULL <- COMMAND <-> A <-- CMD <-> C -> ... */
-                                                /*                       ---------->          */
-                                                /* ****************************************** */
-            cmd->prev->prev = cmd;              /* NULL <- COMMAND --> A <-- CMD <-> C -> ... */
-                                                /*                       --------<->          */
-                                                /* ****************************************** */
-            if (cmd->next != NULL)              /*                       <----------          */
-            {                                   /* NULL <- COMMAND --> A <-- CMD --> C -> ... */
-                cmd->next->prev = cmd->prev;    /*                       --------<->          */
-            }                                   /* ****************************************** */
-            cmd->prev = NULL;                   /* NULL <- COMMAND ----------> A <-> C -> ... */
-                                                /*                        <---                */
-                                                /*      <------------ CMD --------->          */
-                                                /* ****************************************** */
-            cmd->next = (*command)->next;       /* NULL <- COMMAND ----------> A <-> C -> ... */
-                                                /*      <------------ CMD <-->                */
-                                                /* ****************************************** */
-            ft_shell_command_delete(*command);  /*            *\ C\O\M\M\A\N\D \*             */
-                                                /* ****************************************** */
-            *command = cmd;                     /* NULL <--- CMD <-----------> A <-> C -> ... */
-                                                /* ****************************************** */
-            return (historic_size);
-        }
-    }
-    /* Pas de doublon, on garde la commande. */
-    historic_size++;
-    /* Suppression des éléments en trop */
-    while ((long) historic_size > historic_max_size)
-    {
-        ft_shell_command_remove_last(command);
-        historic_size--;
-    }
-    return (historic_size);
-}
-
-static size_t ft_shell_command_save_form_shell(t_cmd **command,
-                                               size_t  historic_size,
-                                               long    historic_max_size)
-{
-    t_cmd   *cmd    = *command;
-    uint8_t *buffer = cmd->buffer;
-
-    /* Si la ligne est vide ou commence par un espace blanc */
-    if (buffer[0] == '\0' || ft_iswhitespace((char) buffer[0]))
-    {
-        /* Rien de plus à faire ici */
-        return (historic_size);
-    }
-    /* Recherche de doublon dans l'historique */
-    t_cmd *first = ft_shell_command_get_first(cmd);
-    cmd          = first;
-    while (cmd->next != NULL)
-    {
-        cmd = cmd->next;
-        /* Doublon trouvé, on le place au début */
-        if (ft_ustrcmp(buffer, cmd->origin) == 0)
-        {
-            /* Si c'est le premier élément de la liste */
-            if (cmd == first->next)
-            {
-                /* Rien de plus à faire ici */
-                return (historic_size);
-            }
-            /* Sinon on insère la commande au début de "l'historique" (après la première commande) */
-            if (cmd->next != NULL)           /* ***************************************** */
-            {                                /*                    <------------          */
-                cmd->next->prev = cmd->prev; /* NULL <- FIRST <-> A <-> CMD --> C -> NULL */
-            }                                /*                                           */
-                                             /* ***************************************** */
-            cmd->prev->next   = cmd->next;   /* NULL <- FIRST <-> A <---------> C -> NULL */
-                                             /*                     <-- CMD -->           */
-                                             /* ***************************************** */
-            cmd->prev         = first;       /* NULL <- FIRST <-> A <---------> C -> NULL */
-                                             /*               <-------- CMD -->           */
-                                             /* ***************************************** */
-            cmd->next         = first->next; /* NULL <- FIRST <---------> A <-> C -> NULL */
-                                             /*               <-- CMD -->                 */
-                                             /* ***************************************** */
-            first->next->prev = cmd;         /* NULL <- FIRST ----------> A <-> C -> NULL */
-                                             /*               <-- CMD <->                 */
-                                             /* ***************************************** */
-            first->next       = cmd;         /* NULL <- FIRST <-> CMD <-> A <-> C -> NULL */
-                                             /* ***************************************** */
-            return (historic_size);
-        }
-    }
-    /* Pas de doublon, on sauvegarde la commande au début de l'historique */
-                                                                  /* ****************************************** */
-                                                                  /* NULL <- FIRST <-> A <-> B -> NULL          */
-                                                                  /* ****************************************** */
-    cmd         = ft_shell_command_new(buffer,                    /* NULL <--- CMD <-> A                        */
-                               first->next,                       /* NULL <- FIRST --> A <-> B -> NULL          */
-                               SHELL_COMMAND_NEW_DUPLICATE_LINE); /* ****************************************** */
-    cmd->prev   = first;                                          /* NULL <- FIRST <-- CMD <-> A <-> B -> NULL  */
-                                                                  /*               ---------->                  */
-                                                                  /* ****************************************** */
-    first->next = cmd;                                            /* NULL <- FIRST <-> CMD <-> A <-> B -> NULL  */
-                                                                  /* ****************************************** */
-    historic_size++;
-    /* Suppression des éléments en trop */
-    while ((long) historic_size > historic_max_size)
-    {
-        ft_shell_command_remove_last(command);
-        historic_size--;
-    }
-    return (historic_size);
-}
-
-/******************************************************************************
- * FONCTIONS UTILES POUR LES ZONES DE TEXTE SURLIGNEES
- ******************************************************************************/
-
-static t_higharea *ft_command_highlight_remove_area(t_cmd *command, t_higharea *harea);
-
-void ft_command_highlight_move_areas(t_cmd *command, e_highop operation, size_t value)
-{
-    t_higharea *harea = ft_highlight_first(command->harea);
-    size_t      pos   = command->pos;
-    int         hmode = TEST_BIT(command->option, COMMAND_HIGHLIGHT_MODE);
-
-    while (harea != NULL)
-    {
-        switch (operation)
-        {                                           /* **************************************************** */
-            case SHELL_HIGHLIGHTED_AREA_ADD_CHAR:   /* Ajout d'un caractère                                 */
-            {                                       /*                                                      */
-                if (pos < harea->tail)              /* La position ne se trouve pas dans une zone de texte  */
-                {                                   /* Hareas:   | - |   *   | - - - - - - - |   | - - |    */
-                    harea->tail += value;           /* Result:   | - |     *   | - - - - - - - |   | - - |  */
-                    harea->head += value;           /*           0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0  */
-                }                                   /*                                                      */
-                else if (pos == harea->tail)        /* La position se trouve au début d'une zone de texte   */
-                {                                   /* Highlight Mode : OFF                                 */
-                    if (hmode == 0)                 /* Hareas:   | - |       * - - - - - - - |   | - - |    */
-                    {                               /* Result:   | - |           * - - - - - - - |   | - -  */
-                        harea->tail += value;       /*           0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0  */
-                    }                               /* Highlight Mode : ON                                  */
-                    harea->head += value;           /* Hareas:   | - |       * - - - - - - - |   | - - |    */
-                }                                   /* Result:   | - |       | - * - - - - - - - |   | - -  */
-                                                    /*           0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0  */
-                else if (pos < harea->head)         /* La position se trouve dans une zone de texte         */
-                {                                   /* Hareas:   | - |       | - - * - - - - |   | - - |    */
-                    harea->head += value;           /* Result:   | - |       | - - - * - - - - |   | - - |  */
-                }                                   /*           0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0  */
-                else if (pos == harea->head)        /* La position se trouve à la fin d'une zone de texte   */
-                {                                   /* Highlight Mode : OFF                                 */
-                    if (hmode != 0)                 /* Hareas:   | - |       | - - - - - - - *   | - - |    */
-                    {                               /* Result:   | - |       | - - - - - - - | *   | - - |  */
-                        harea->head += value;       /*           0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0  */
-                    }                               /* Highlight Mode : ON                                  */
-                }                                   /* Hareas:   | - |       | - - - - - - - *   | - - |    */
-                break;                              /* Result:   | - |       | - - - - - - - - *   | - - |  */
-            }                                       /*           0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0  */
-                                                    /* **************************************************** */
-            case SHELL_HIGHLIGHTED_AREA_REMOVE_CHAR_LEFT: /* Suppression d'un caractère à gauche            */
-            {                                       /*                                                      */
-                if (pos <= harea->tail)             /* La position ne se trouve pas dans une zone de texte  */
-                {                                   /* Hareas:   | - |   *   | - - - - - - - |   | - - |    */
-                    harea->tail -= value;           /* Result:   | - | *   | - - - - - - - |     | - - |    */
-                    harea->head -= value;           /*           0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0  */
-                }                                   /* La position se trouve au début d'une zone de texte   */
-                                                    /* Hareas:   | - |       * - - - - - - - |   | - - |    */
-                                                    /* Result:   | - |     * - - - - - - - |     | - - |    */
-                                                    /*           0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0  */
-                else if (pos <= harea->head)        /* La position se trouve dans une zone de texte         */
-                {                                   /* Hareas:   | - |       | - - * - - - - |   | - - |    */
-                    harea->head -= value;           /* Result:   | - |       | - * - - - - |     | - - |    */
-                }                                   /*           0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0  */
-                                                    /* La position se trouve à la fin d'une zone de texte   */
-                                                    /* Hareas:   | - |       | - - - - - - - *   | - - |    */
-                                                    /* Result:   | - |       | - - - - - - *     | - - |    */
-                                                    /*           0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0  */
-                else if (pos > harea->head)         /* La position se trouve après une zone de texte        */
-                {                                   /*                                                      */
-                    if (pos - value <= harea->tail) /* et la value se trouve avant cette zone de texte      */
-                    {                               /* Hareas:   | - |       | - - - - - - - | *   | - - |  */
-                        harea = ft_command_highlight_remove_area(command, harea);
-                                                    /* Result:   | - |       *                     | - - |  */
-                        continue;                   /*           0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0  */
-                    }                               /*                                                      */
-                    if (pos - value < harea->head)  /* et la value se trouve dans cette zone de texte       */
-                    {                               /* Hareas:   | - |       | - - - - - - - | *   | - - |  */
-                        harea->head = pos - value;  /* Result:   | - |       | - - - *             | - - |  */
-                    }                               /*           0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0  */
-                }                                   /*                                                      */
-                break;                              /*                                                      */
-            }                                       /* **************************************************** */
-            case SHELL_HIGHLIGHTED_AREA_REMOVE_CHAR_RIGHT: /* Suppression d'un caractère à droite           */
-            {                                       /*                                                      */
-                if (pos < harea->tail)              /* La position ne se trouve pas dans une zone de texte  */
-                {                                   /*                                                      */
-                    if (pos + value >= harea->head) /* et la value se trouve après cette zone de texte      */
-                    {                               /* on supprime la zone et on passe à la suivante...     */
-                        harea = ft_command_highlight_remove_area(command, harea);
-                        continue;                   /* Hareas:   | - |   *   | - - - - - - - |   | - - |    */
-                    }                               /* Result:   | - |   *                       | - - |    */
-                                                    /*           0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0  */
-                    if (pos + value >= harea->tail) /* et la value se trouve dans cette zone de texte       */
-                    {                               /* Hareas:   | - |   *   | - - - - - - - |   | - - |    */
-                        harea->tail = pos;          /* Result:   | - |   * - - - - |             | - - |    */
-                    }                               /*           0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0  */
-                    else                            /*                                                      */
-                    {                               /* Hareas:   | - |   *   | - - - - - - - |   | - - |    */
-                        harea->tail -= value;       /* Result:   | - |   * | - - - - - - - |     | - - |    */
-                    }                               /*           0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0  */
-                    harea->head -= value;           /*                                                      */
-                }                                   /*                                                      */
-                else if (pos == harea->tail)        /* La position se trouve au début d'une zone de texte   */
-                {                                   /*                                                      */
-                    if (pos + value >= harea->head) /* et la value se trouve après cette zone de texte      */
-                    {                               /* Highlight Mode : OFF                                 */
-                        if (hmode == 0)             /* Hareas:   | - |       * - - - - - - - |   | - - |    */
-                        {                           /* Result:   | - |       *                   | - - |    */
-                            harea = ft_command_highlight_remove_area(command, harea); /* on supprime la zone et         */
-                            continue;                                                 /* on passe à la zone suivante... */
-                        }                           /*                                                      */
-                        harea->head = harea->tail;  /* Highlight Mode : ON                                  */
-                    }                               /* on conserve la zone de texte surlignée...            */
-                    else                            /*                                                      */
-                    {                               /* Hareas:   | - |       * - - - - - - - |   | - - |    */
-                        harea->head -= value;       /* Result:   | - |       * - - - |           | - - |    */
-                    }                               /*           0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0  */
-                }                                   /*                                                      */
-                else if (pos < harea->head)         /* La position se trouve dans une zone de texte         */
-                {                                   /* Hareas:   | - |       | - - - * - - - |   | - - |    */
-                    if (pos + value >= harea->head) /* et la value se trouve après cette zone de texte      */
-                    {                               /* Hareas:   | - |       | - - - * - - - |   | - - |    */
-                        harea->head = pos;          /* Result:   | - |       | - - - *           | - - |    */
-                    }                               /*           0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0  */
-                    else                            /* et la value se trouve dans cette zone de texte       */
-                    {                               /* Hareas:   | - |       | - - - * - - - |   | - - |    */
-                        harea->head -= value;       /* Result:   | - |       | - - - * - |       | - - |    */
-                    }                               /*           0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0  */
-                }                                   /*                                                      */
-                                                    /* La position se trouve à la fin d'une zone de texte   */
-                break;                              /* -> rien à faire.                                     */
-            }                                       /* **************************************************** */
-            case SHELL_HIGHLIGHTED_AREA_MOVE_LEFT:  /* Déplacement de la position vers la gauche            */
-            {                                       /*                                                      */
-                if (hmode == 0)                     /* Highlight Mode : OFF                                 */
-                {                                   /*                                                      */
-                    break;                          /* -> rien à faire                                      */
-                }                                   /*                                                      */
-                if (pos == harea->tail)             /* La position se trouve au début d'une zone de texte   */
-                {                                   /* Hareas:   | - |       * - - - - - - - |   | - - |    */
-                    harea->tail -= value;           /* Result:   | - |   * - - - - - - - - - |   | - - |    */
-                }                                   /*           0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0  */
-                else if (pos < harea->head)         /* La position se trouve dans une zone de texte         */
-                {                                   /*                                                      */
-                    if (pos - value < harea->tail)  /* et la value est avant la tail                        */
-                    {                               /* Hareas:   | - |       | - - - * - - - |   | - - |    */
-                        harea->tail = pos - value;  /* Result:   | - |   * - - - - - - - - - |   | - - |    */
-                    }                               /*           0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0  */
-                }                                   /*                                                      */
-                else if (pos == harea->head)        /* La position se trouve à la fin d'une zone de texte   */
-                {                                   /*                                                      */
-                    if (pos - value <= harea->tail) /* et la value est avant la tail                        */
-                    {                               /* Hareas:   | - |       | - - - - - - - *   | - - |    */
-                        harea->head = harea->tail;  /* Result:   | - |   * - |                   | - - |    */
-                        harea->tail = pos - value;  /*           0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0  */
-                    }                               /*                                                      */
-                    else                            /* sinon                                                */
-                    {                               /* Hareas:   | - |       | - - - - - - - *   | - - |    */
-                        harea->head -= value;       /* Result:   | - |       | - - - *           | - - |    */
-                    }                               /*           0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0  */
-                }                                   /*                                                      */
-                else if (pos > harea->head)         /* La position se trouve après une zone de texte        */
-                {                                   /* Hareas:   | - |       | - - - - - - - *   | - - |    */
-                    if (pos - value <= harea->tail) /* Result:               | - - - - - - - *   | - - |    */
-                    {                               /*           0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0  */
-                        harea = ft_command_highlight_remove_area(command, harea); /* on supprime la zone et     */
-                        continue;                                                 /* on passe à la suivante...  */
-                    }                               /*                                                      */
-                }                                   /* Sinon rien à faire.                                  */
-                break;                              /*                                                      */
-            }                                       /* **************************************************** */
-            case SHELL_HIGHLIGHTED_AREA_MOVE_RIGHT: /* Déplacement de la position vers la droite            */
-            {                                       /*                                                      */
-                if (hmode == 0)                     /* Highlight Mode : OFF                                 */
-                {                                   /*                                                      */
-                    break;                          /* -> Rien à faire                                      */
-                }                                   /*                                                      */
-                if (pos < harea->tail)              /* La position se trouve avant d'une zone de texte      */
-                {                                   /* Hareas:   | - |       * - - - - - - - |   | - - |    */
-                    if (pos + value >= harea->head) /* Result:   | - |                       | - - - - *    */
-                    {                               /*           0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0  */
-                        harea = ft_command_highlight_remove_area(command, harea); /* on supprime la zone et     */
-                        continue;                                                 /* on passe à la suivante...  */
-                    }                               /*                                                      */
-                }                                   /*                                                      */
-                if (pos < harea->head)              /* La position se trouve au début d'une zone de texte   */
-                {                                   /* et la value est supérieure à la head                 */
-                    if (pos + value > harea->head)  /* Hareas:   | - |       * - - - - - - - |   | - - |    */
-                    {                               /* Result:   | - |                       | - - - - *    */
-                        harea->tail = harea->head;  /*           0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0  */
-                        harea->head = pos + value;  /* Sinon                                                */
-                    }                               /* Hareas:   | - |       * - - - - - - - |   | - - |    */
-                    else                            /* Result:   | - |               * - - - |   | - - |    */
-                    {                               /*           0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0  */
-                        harea->tail += value;       /* La position se trouve dans une zone de texte         */
-                    }                               /* et la value est supérieure à la head                 */
-                }                                   /* Hareas:   | - |       | - - - * - - - |   | - - |    */
-                                                    /* Result:   | - |                       | - - - - *    */
-                                                    /*           0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0  */
-                                                    /* Sinon                                                */
-                                                    /* Hareas:   | - |       * - - - - - - - |   | - - |    */
-                                                    /* Result:   | - |               * - - - |   | - - |    */
-                                                    /*           0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0  */
-                else if (pos == harea->head)        /* La position se trouve à la fin d'une zone de texte   */
-                {                                   /* Hareas:   | - |       | - - - - *         | - - |    */
-                    harea->head += value;           /* Hareas:   | - |       | - - - - - - - *   | - - |    */
-                }                                   /*           0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0  */
-                break;                              /*                                                      */
-            }
-        }
-        harea = harea->next;
-    }
-}
-
-/**
- * @brief Fonction de suppression d'une zone de texte surlignée d'une commande.
- * @param[in] command Structure d'une commande
- * @param[in] harea Structure d'une zone de texte surlignée
- * @return La zone de texte surlignée suivante.
- */
-static t_higharea *ft_command_highlight_remove_area(t_cmd *command, t_higharea *harea)
-{
-    t_higharea *next = NULL;
-
-    if (harea != NULL)
-    {
-        next = harea->next;
-        if (harea->prev != NULL)
-        {
-            harea->prev->next = next;
-        }
-        else
-        {
-            command->harea = next;
-        }
-        if (next != NULL)
-        {
-            next->prev = harea->prev;
-        }
-        free(harea);
-    }
-    return (next);
 }
