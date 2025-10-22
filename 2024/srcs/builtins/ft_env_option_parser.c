@@ -11,6 +11,7 @@
 /* ************************************************************************** */
 
 #include "ft_defines.h"
+#include "ft_dynamic_table.h"
 #include "ft_shell.h"
 #include "ft_shell_builtin_env.h"
 #include "ft_shell_log.h"
@@ -35,7 +36,7 @@ static int ft_env_i_handler(
     size_t pos             _unused,
     const char **args_list _unused)
 {
-    ASSIGN_BIT(env->option, ENV_NO_ENV);
+    _set_bit(env->option, ENV_NO_ENV);
     return (0);
 }
 
@@ -56,7 +57,7 @@ static int ft_env_zero_handler(
     size_t pos             _unused,
     const char **args_list _unused)
 {
-    ASSIGN_BIT(env->option, ENV_PRINT_NO_NEWLINE);
+    _set_bit(env->option, ENV_PRINT_NO_NEWLINE);
     return (0);
 }
 
@@ -151,7 +152,7 @@ static int ft_env_v_handler(
     size_t pos             _unused,
     const char **args_list _unused)
 {
-    ASSIGN_BIT(env->option, ENV_VERBOSE);
+    _set_bit(env->option, ENV_VERBOSE);
     return (0);
 }
 
@@ -186,12 +187,12 @@ static int ft_env_dash_handler(
     }
     if (arg[1] == '\0') /* Pas d'autres caractères, agit comme l'option -i */
     {
-        ASSIGN_BIT(env->option, ENV_NO_ENV);
+        _set_bit(env->option, ENV_NO_ENV);
         return (0);
     }
     if (ft_strcmp(arg, "-help") == 0)
     {
-        ASSIGN_BIT(env->option, ENV_PRINT_HELP);
+        _set_bit(env->option, ENV_PRINT_HELP);
         return (0);
     }
     ft_shell_log(SH_LOG_LEVEL_WARN,
@@ -217,14 +218,7 @@ int ft_env_option_parser(t_shell *shell, t_builtin_env *env, const char **args, 
     size_t      iarg  = 0;
     int         ret   = 0;
 
-    env->cpy = ft_tabdup((const char **) shell->environ.public);
-    if (env->cpy == NULL)
-    {
-        ft_shell_log(SH_LOG_LEVEL_ERR,
-               "%s: global environment duplication failed.",
-               env->builtin_name);
-        return (-1);
-    }
+    ft_dynamic_table_duplicate(&env->cpy, &shell->environ.public);
     while (arg != NULL && arg[0] == '-') /* Parcours de la liste des arguments */
     {
         iarg = 1;
@@ -274,17 +268,17 @@ int ft_env_option_parser(t_shell *shell, t_builtin_env *env, const char **args, 
     //     jter = 1;
     //     if (args[iter][jter] == '\0')
     //     {
-    //         ASSIGN_BIT(env->option, ENV_NO_ENV);
+    //         _set_bit(env->option, ENV_NO_ENV);
     //     }
     //     while (args[iter][jter] != '\0')
     //     {
     //         if (args[iter][jter] == 'i')
     //         {
-    //             ASSIGN_BIT(env->option, ENV_NO_ENV);
+    //             _set_bit(env->option, ENV_NO_ENV);
     //         }
     //         else if (args[iter][jter] == '0')
     //         {
-    //             ASSIGN_BIT(env->option, ENV_PRINT_NO_NEWLINE);
+    //             _set_bit(env->option, ENV_PRINT_NO_NEWLINE);
     //         }
     //         else if (args[iter][jter] == 'u')
     //         {
@@ -326,7 +320,7 @@ int ft_env_option_parser(t_shell *shell, t_builtin_env *env, const char **args, 
     //         }
     //         else if (args[iter][jter] == 'v')
     //         {
-    //             ASSIGN_BIT(env->option, ENV_VERBOSE);
+    //             _set_bit(env->option, ENV_VERBOSE);
     //         }
     //         else if (args[iter][jter] == '-')
     //         {
@@ -342,7 +336,7 @@ int ft_env_option_parser(t_shell *shell, t_builtin_env *env, const char **args, 
     //             }
     //             if (ft_strcmp(args[iter], "--help") == 0)
     //             {
-    //                 ASSIGN_BIT(env->option, ENV_PRINT_HELP);
+    //                 _set_bit(env->option, ENV_PRINT_HELP);
     //                 return (0);
     //             }
     //             ft_shell_log(SH_LOG_LEVEL_WARN, "%s: unrecognised option -- %s", args[0], args[iter]);

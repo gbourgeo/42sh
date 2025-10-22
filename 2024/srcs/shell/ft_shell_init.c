@@ -30,7 +30,7 @@ void ft_shell_init(const char *progname, const char **environ, t_shell *shell)
     shell->progname = ft_strrchr(progname, '/');
     shell->progname = (shell->progname != NULL) ? shell->progname + 1 : progname;
     ft_shell_env_init(&shell->environ, environ, shell->progname);
-    for (size_t iter = 0; iter < LENGTH_OF(shell->sigs); iter++)
+    for (size_t iter = 0; iter < _length_of(shell->sigs); iter++)
     {
         shell->sigs[iter] = SIG_ERR;
     }

@@ -14,7 +14,9 @@
 #define _FT_SHELL_BUILTIN_ENV_H_
 
 #include "ft_defines.h"
+#include "ft_dynamic_table.h"
 #include "ft_shell.h"
+#include <stddef.h>
 #include <stdint.h>
 
 typedef enum env_options
@@ -27,11 +29,11 @@ typedef enum env_options
     ENV_PRINT_HELP       = 0x0008,
 } env_e;
 
-typedef struct _align(64) s_builtin_env
+typedef struct _align(128) s_builtin_env
 {
     const char  *builtin_name;
-    char       **cpy;
-    char       **save;
+    t_dyntab     cpy;
+    t_dyntab     save;
     const char  *change_dir;
     const char  *working_dir;
     const char **unset_env;

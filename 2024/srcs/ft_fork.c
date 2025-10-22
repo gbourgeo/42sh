@@ -11,7 +11,6 @@
 /* ************************************************************************** */
 
 #include "ft_shell.h"
-#include "ft_shell_builtins.h"
 #include "ft_shell_constants.h"
 #include "ft_shell_environ.h"
 #include "ft_shell_log.h"
@@ -109,7 +108,7 @@ retcode_e fork_function(const char **args, t_shell *shell)
     }
     else if (pid == 0)
     {
-        execve(path, (char * const *) args, shell->environ.public);
+        execve(path, (char * const *) args, (char * const *) shell->environ.public.table);
         ft_shell_log(SH_LOG_LEVEL_WARN, "Wrong argument: %s", args[0]);
     }
     else

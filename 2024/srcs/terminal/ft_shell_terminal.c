@@ -127,8 +127,8 @@ static int ft_get_termcaps(const char ** const capabilities)
     unsigned long iter  = 0;
     int           error = 0;
 
-#pragma unroll(LENGTH_OF(caps))
-    while (iter < LENGTH_OF(caps))
+#pragma unroll(_length_of(caps))
+    while (iter < _length_of(caps))
     {
         capabilities[iter] = NULL;
         capabilities[iter] = tgetstr(caps[iter], NULL);
@@ -153,7 +153,7 @@ static int ft_shell_terminal_change_attributes(int filed, const t_term *terminal
     struct termios termios;
 
     termios = terminal->ios;
-    REMOVE_BIT(termios.c_lflag, ICANON | ECHO | ISIG);
+    _remove_bit(termios.c_lflag, ICANON | ECHO | ISIG);
     termios.c_cc[VMIN]  = 1;
     termios.c_cc[VTIME] = 0;
     return tcsetattr(filed, TCSANOW, &termios);

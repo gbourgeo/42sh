@@ -14,21 +14,86 @@
 #define _FT_SHELL_ENVIRON_H
 
 #include "ft_defines.h"
+#include "ft_dynamic_table.h"
 #include <stdint.h>
 
-typedef struct _align(32) s_shell_environnement
+#define SHELL_ENVIRON_ELEMS 5
+typedef struct _align(128) s_shell_environnement
 {
-    const char  *bin_path; /* Chemins absolus des binaires */
-    char       **public;   /* Variables d'environnement publiques */
-    char       **private;  /* Variables d'environnement privées */
+    const char *bin_path; /* Chemins absolus des binaires */
+    t_dyntab    public;   /* Variables d'environnement publiques */
+    t_dyntab    private;  /* Variables d'environnement privées */
 } t_env;
+
+typedef struct s_shell_environment_elem
+{
+    char *envvar;
+} t_envelem;
 
 enum e_shell_environ_modify_options
 {
     SHELL_ENV_INTERPRETCHARACTER = 0x1,
-    SHELL_ENV_ADD_PUBLIC      = 0x2,
-    SHELL_ENV_ADD_PRIVATE     = 0x4,
+    SHELL_ENV_ADD_PUBLIC         = 0x2,
+    SHELL_ENV_ADD_PRIVATE        = 0x4,
 };
+
+/**
+ * @brief Fonction d'ajout/modification d'une variable d'Environement du Shell.
+ * Si la variable n'existe pas elle sera créée.
+ * @param[in] environ Table Dynamique d'Environnement du Shell
+ * @param[in] envvar  Variable d'environnement (sous la forme 'XXX=yyy')
+ */
+void ft_shell_env_add_envvar(t_dyntab *environ, const char *envvar);
+
+/**
+ * @brief Fonction d'ajout/modification de la valeur d'une variable d'Environement du Shell
+ * sous la forme d'un nombre qui sera convertit en chaîne de caractères. Si la variable
+ * n'existe pas elle sera créée. Les options disponibles sont :
+ *
+ * - SHELL_ENV_INTERPRETCHARACTER, interprète les caractères d'échappement de la valeur.
+ *
+ * - SHELL_ENV_ADD_PUBLIC, modifie l'environement global du Shell.
+ *
+ * - SHELL_ENV_ADD_PRIVATE, modifie l'environement privé du Shell.
+ *
+ * @param[in] environ Environnement du Shell
+ * @param[in] key     Clé
+ * @param[in] value   Valeur
+ * @param[in] options Options d'interprétation/ajout
+ */
+void ft_shell_env_add_l(t_env *environ, const char *key, long value, uint32_t options);
+
+/**
+ * @brief Fonction d'ajout/modification de la valeur d'une variable d'Environement du Shell
+ * sous la forme d'une chaîne de caractères. Si la variable n'existe pas elle sera créée.
+ * Les options disponibles sont :
+ *
+ * - SHELL_ENV_INTERPRETCHARACTER, interprète les caractères d'échappement de la valeur.
+ *
+ * - SHELL_ENV_ADD_PUBLIC, modifie l'environement global du Shell.
+ *
+ * - SHELL_ENV_ADD_PRIVATE, modifie l'environement privé du Shell.
+ *
+ * @param[in] environ Environnement du Shell
+ * @param[in] key     Clé
+ * @param[in] value   Valeur
+ * @param[in] options Options d'interprétation/ajout
+ */
+void ft_shell_env_add_s(t_env *environ, const char *key, const char *value, uint32_t options);
+
+/**
+ * @brief Supprime les éléments de l'Environement du Shell.
+ * @param environ Environement du Shell
+ */
+void ft_shell_env_free(t_env *environ);
+
+/**
+ * @brief Récupère l'élément de la table correspondant à une clé.
+ * @param environ Table Dynamique
+ * @param keyname Clé
+ * @return Elément de la table si la clé à été trouvée, NULL autrement.
+ */
+t_envelem  *ft_shell_env_get_elem(const t_dyntab *environ, const char *keyname);
 
 /**
  * @brief Récupère la valeur d'une variable d'environnement.
@@ -38,7 +103,7 @@ enum e_shell_environ_modify_options
  * @return La valeur de la variable d'environnement si elle existe,
  *         NULL si elle n'existe pas.
  */
-const char *ft_shell_env_get_value(const char *keyname, t_env *environ);
+const char *ft_shell_env_get_value(const char *keyname, const t_env *environ);
 
 /**
  * @brief Fonction d'initialisation de l'environnement du Shell, à savoir:
@@ -53,31 +118,6 @@ const char *ft_shell_env_get_value(const char *keyname, t_env *environ);
  * @param[in] shellname     Nom du shell
  */
 void ft_shell_env_init(t_env *environ, const char **env, const char *shellname);
-
-/**
- * @brief Fonction d'ajout/modification d'une variable d'Environement du Shell.
- * La fonction recherche d'abord la variable dans un(plusieurs) environement du Shell,
- * si la variable n'existe pas elle sera ajoutée.
- * Options disponibles:
- *
- * - SHELL_ENV_INTERPRETCHARACTER, interprète les caractères d'échappement de la valeur.
- *
- * - SHELL_ENV_ADD_PUBLIC, modifie l'environement global du Shell.
- *
- * - SHELL_ENV_ADD_PRIVATE, modifie l'environement privé du Shell.
- *
- * @param[in] env   Environnement du Shell
- * @param[in] key   Clé
- * @param[in] value Nouvelle valeur de clé
- * @param[in] options Options de modification
- */
-void ft_shell_env_add(t_env *environ, const char *key, const char *value, uint32_t options);
-
-/**
- * @brief Supprime les éléments de l'Environement du Shell.
- * @param environ Environement du Shell
- */
-void ft_shell_env_free(t_env *environ);
 
 /**
  * @brief Fonction de modification d'une variable d'Environement du Shell.

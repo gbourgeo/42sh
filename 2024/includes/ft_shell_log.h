@@ -14,6 +14,7 @@
 #define _FT_SHELL_LOG_H_
 
 #include <stdint.h>
+
 typedef enum
 {
     SHELL_LOG_LEVEL_DBG = 0,
@@ -41,5 +42,11 @@ typedef enum
   * @param err_str      Description de l'erreur et ses arguments
   */
 void ft_shell_log(log_level_e log_level, const char *file, uint32_t line, const char *err_str, ...);
+
+ /**
+  * @brief Fonction de retour d'erreur système.
+  * @return L'erreur système sous format char*.
+  */
+char *ft_shell_strerror(void);
 
 #endif /* _FT_SHELL_LOG_H_ */

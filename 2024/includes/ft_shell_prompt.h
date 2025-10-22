@@ -18,16 +18,19 @@
 #include "ft_shell_terminal.h"
 #include <stddef.h>
 
+#define SHELL_PROMPT_DEFAULT_STR "$ "
+#define SHELL_PROMPT_MAX_LENGTH  1024
+
 /*****************************************************************************
  * PROMPT STRUCTURE
  ******************************************************************************/
 
 typedef struct _align(32) s_prompt
 {
-    char  *str;         /* Prompt string */
-    size_t real_len;    /* Longueur réel du prompt (avec les codes couleurs) */
-    size_t printed_len; /* Longueur d'affichage du prompt (sans les codes couleurs) */
-    char   print;       /* Afficher le prompt ? */
+    char   str[SHELL_PROMPT_MAX_LENGTH];    /* Prompt string */
+    size_t real_len;                        /* Longueur réel du prompt (avec les codes couleurs) */
+    size_t printed_len;                     /* Longueur d'affichage du prompt (sans les codes couleurs) */
+    char   doprint;                           /* Afficher le prompt ? */
 } t_prompt;
 
 /*****************************************************************************
@@ -45,18 +48,12 @@ void ft_shell_prompt_init(t_prompt *prompt);
  * @param prompt Prompt du Shell
  * @param environ Environement du Shell
  */
-void ft_shell_prompt_create(t_prompt *prompt, t_env *environ);
+void ft_shell_prompt_create(t_prompt *prompt, const t_env *environ);
 
 /**
  * @brief Affiche le prompt du shell (mode interactif).
  * @param shell Structure interne du shell
  */
 void ft_shell_prompt_print(t_prompt *prompt, t_term *terminal);
-
-/**
- * @brief Nettoie la structure du prompt
- * @param prompt
- */
-void ft_shell_prompt_clear(t_prompt *prompt);
 
 #endif /* _FT_SHELL_PROMPT_H_ */

@@ -19,12 +19,13 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define SHELL_HISTORY_MAX_ELEMS "2"
+#define SHELL_HISTORY_MAX_ELEMS "100"
 
-typedef struct _align(16) s_history
+typedef struct _align(32) s_history
 {
-    const char *filepath;
-    long        max_size;
+    const char *filepath; /* Fichier de l'Historique de Commandes */
+    long        length;   /* Longueur de l'Historique de Commandes */
+    long        size;     /* Taille (max) de l'Historique de Commandes */
 } t_hist;
 
 /**
@@ -39,18 +40,24 @@ void ft_shell_history_init(t_hist *history);
  * @param history Contexte de l'Historique du Shell
  * @param environ Environnement du Shell
  * @param progname Nom du programme
- * @return Dernière commande de la liste de commande
  */
-size_t ft_shell_history_parse_file(t_cmd     **command,
-                                   t_hist     *history,
-                                   t_env      *environ,
-                                   const char *progname);
+void ft_shell_history_parse_file(t_cmd     **command,
+                                 t_hist     *history,
+                                 t_env      *environ,
+                                 const char *progname);
 
 /**
- * @brief Sauveagrde l'historique dans le fichier d'hitosique du Shell
- * @param history Contexte de l'Historique du Shell
- * @param command Liste de commandes
+ * @brief Sauvegarde toutes les commandes dans le fichier d'historique du Shell
+ * @param history Historique du Shell
+ * @param command Commandes du Shell
  */
 void ft_shell_history_save_to_file(const t_hist *history, const t_cmd *command);
+
+/**
+ * Sauvegarde une nouvelle commande au début de la liste de commandes.
+ * @param history Historique de Commandes
+ * @param command Structure d'une Commande
+ */
+void ft_shell_history_save_command(t_hist *history, t_cmd *command);
 
 #endif /* _FT_SHELL_HISTORY_H_ */

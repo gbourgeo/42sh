@@ -46,6 +46,12 @@
 # define NSIG         __DARWIN_NSIG
 #endif
 
+typedef enum shell_command_save_e
+{
+    SHELL_COMMAND_SAVE = 0,
+    SHELL_COMMAND_DONT_SAVE,
+} e_shcmdsave;
+
 /******************************************************************************
  * SHELL STRUCTURE
  *****************************************************************************/
@@ -54,10 +60,9 @@ typedef struct _align(128) s_shell
 {
     t_term       terminal;     /* Informations du terminal */
     t_prompt     prompt;       /* Prompt du Shell */
-    t_hist       history;      /* Informations d'historique */
+    t_hist       history;      /* Informations d'Historique */
     t_cmd       *command;      /* Historique de commandes et commande actuelle en tête */
-    size_t       command_size; /* Taille de l'historique de commandes */
-    uint8_t     *yank;         /* Copie */
+    uint8_t     *yank;         /* Copie de la (des) dernière(s) zone(s) de texte surlignée */
     const char  *progname;     /* Nom du programme */
     t_env        environ;      /* Environnement du Shell */
     sighandler_t sigs[NSIG];   /* Tableau de sauvegarde des handlers des signaux */
@@ -82,26 +87,26 @@ int main(int argc, const char **argv);
 /**
  * @brief Fonction d'exécution des arguments du Shell.
  * @param argv Tableau des arguments
- * @param shell Structure interne du Shell
+ * @param shell Structure du Shell
  */
 void ft_shell_args_exec(const char **argv, t_shell *shell);
 
 /**
  * @brief Fonction de parsing des options du Shell.
  * @param argv Liste des arguments du programme
- * @param shell Structure interne du Shell
+ * @param shell Structure du Shell
  */
 const char **ft_shell_args_parse(const char **argv, t_shell *shell);
 
 /**
  * @brief Execution de la commande en cours.
- * @param[in] shell Structure interne du shell
+ * @param[in] shell Structure du shell
  */
 void ft_shell_exec_command(t_shell *shell);
 
 /**
- * @brief Fonction de suppression de la structure interne du shell
- * @param shell Structure interne du shell
+ * @brief Fonction de suppression de la structure du shell
+ * @param shell Structure du shell
  */
 void ft_shell_exit(t_shell *shell);
 
@@ -110,14 +115,26 @@ void ft_shell_exit(t_shell *shell);
  * l'environnement du Shell.
  * @param progname Nom du programme
  * @param environ Environnement du programme
- * @param shell Structure interne du Shell
+ * @param shell Structure du Shell
  */
 void ft_shell_init(const char *progname, const char **environ,
                    t_shell *shell);
 
 /**
+ * @brief Réinitialise le Shell si en mode intéractif :
+ * * Sauvegarde la Commande dans l'Historique (suivant l'option),
+ * * Réinitialise les Zones de textes surlignés,
+ * * Réinitialise le Prompt,
+ * * Réinitialise les modes du terminal,
+ * * Réinitialise la Commande.
+ * @param shell Structure du Shell
+ * @param savecmd Option de sauvegarde de la Commande dans l'Historique
+ */
+void ft_shell_interactive_reinit(t_shell *shell, e_shcmdsave savecmd);
+
+/**
  * @brief Boucle d'execution du Shell.
- * @param shell Structure interne du shell
+ * @param shell Structure du shell
  */
 void ft_shell_loop(t_shell *shell);
 

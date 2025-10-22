@@ -13,8 +13,8 @@
 #include "ft_defines.h"
 #include "ft_shell.h"
 #include "ft_shell_command.h"
-#include "ft_shell_termkeys.h"
 #include "ft_shell_terminal.h"
+#include "ft_shell_termkeys.h"
 #include "libft.h"
 #include <stdint.h>
 #include <stdlib.h>
@@ -65,9 +65,9 @@ void ft_highlight_yank(t_shell *shell)
 {
     size_t length = 0;
     /* Highlight mode : actif */
-    if (TEST_BIT(shell->command->option, COMMAND_HIGHLIGHT_MODE))
+    if (_test_bit(shell->command->option, COMMAND_HIGHLIGHT_MODE))
     {
-        REMOVE_BIT(shell->command->option, COMMAND_HIGHLIGHT_MODE);
+        _remove_bit(shell->command->option, COMMAND_HIGHLIGHT_MODE);
         ft_term_clear_modes(&shell->terminal);
         shell->command->harea = ft_command_highlight_sort_area(shell->command->harea);
     }

@@ -22,6 +22,8 @@
  * ENUMERES ET STRUCTURE DES ZONES DE TEXTE SURLIGNE
  ******************************************************************************/
 
+#define SHELL_COMMAND_BUFFER_HOP    128
+
 typedef enum highlight_area_operation_e
 {
     SHELL_HIGHLIGHTED_AREA_ADD_CHAR = 0,
@@ -113,7 +115,7 @@ typedef enum command_operation_e
 {
     COMMAND_REMOVE_CHAR_LEFT = 0,
     COMMAND_REMOVE_CHAR_RIGHT,
-} e_cmdop;
+} e_cmdope;
 
 typedef enum command_change_position_operation_e
 {
@@ -121,17 +123,17 @@ typedef enum command_change_position_operation_e
     COMMAND_POS_SUBSTRACT_VALUE,
 } e_posop;
 
-typedef enum command_parse_return_e
+typedef enum command_parsing_return_value_e
 {
     SHELL_COMMAND_PARSED = 0,
     SHELL_COMMAND_PARSE_ABORTED,
 } e_comparse;
 
-typedef enum change_historic_value_e
+typedef enum command_option_e
 {
     COMMAND_HIGHLIGHT_MODE    = 0x01, // 0000 0001
     COMMAND_HISTORIC_MODIFIED = 0x02, // 0000 0010
-} histval_e;
+} e_cmdopt;
 
 typedef enum command_print_option_e
 {
@@ -142,16 +144,17 @@ typedef enum command_print_option_e
 
 typedef struct _align(128) s_command
 {
-    const uint8_t    *origin; /* Buffer originel (celui de la liste) */
-    uint8_t          *buffer; /* Buffer */
-    size_t            len;    /* Longueur du buffer */
-    size_t            size;   /* Taille du buffer */
-    size_t            pos;    /* Position d'écriture dans le buffer */
-    uint32_t          option; /* Options */
-    t_higharea       *harea;  /* Liste de Zone(s) de texte surlignée(s) */
-    t_token          *token;  /* Liste de Token(s) (découpe de la commande) */
-    struct s_command *prev;   /* Commande précédente */
-    struct s_command *next;   /* Commande suivante */
+    const uint8_t    *origin;   /* Buffer de sauvegarde de l'historique */
+    uint8_t          *buffer;   /* Buffer d'écriture */
+    size_t            len;      /* Longueur du buffer */
+    size_t            size;     /* Taille du buffer */
+    size_t            pos;      /* Position d'écriture dans le buffer */
+    uint32_t          option;   /* Options de la Commande */
+    t_higharea       *harea;    /* Liste de Zone(s) de texte surlignée(s) */
+    uint8_t          *tokenbuf; /* Buffer des Tokens */
+    t_token          *token;    /* Liste de Token(s) (découpe de la commande) */
+    struct s_command *prev;     /* Commande précédente */
+    struct s_command *next;     /* Commande suivante */
 } t_cmd;
 
 /******************************************************************************
@@ -229,7 +232,7 @@ void ft_shell_command_debug(const uint8_t *buf, long size);
  * @param[in] operation Operation de suppression
  * @param[in] size Taille de suppression
  */
-void ft_shell_command_delete_character(t_cmd *command, e_cmdop operation, size_t size);
+void ft_shell_command_delete_character(t_cmd *command, e_cmdope operation, size_t size);
 
 /**
  * @brief Fonction d'affichage de la commande sur la sortie standard depuis le début.
@@ -261,10 +264,15 @@ t_cmd *ft_shell_command_new(const uint8_t *line,
  * @brief Parsing de la commande en cours.
  * @param[in] command Structure d'une Commande
  * @param[in] ifs Caractère(s) de séparation de commande
+ * @param[in] option Options du Shell
+ * @param[in] terminal Terminal du Shell
  * @return SHELL_COMMAND_PARSED si la commande à été parsé avec succès,
  * SHELL_COMMAND_PARSE_ABORTED autrement.
  */
-e_comparse ft_shell_command_parse(t_cmd *command, const char *ifs);
+e_comparse ft_shell_command_parse(t_cmd      *command,
+                                  const char *ifs,
+                                  uint32_t    options,
+                                  t_term     *terminal);
 
 /**
  * @brief Agrandit le buffer d'une commande, copie l'ancien buffer dans le nouveau
@@ -285,17 +293,6 @@ t_cmd *ft_shell_command_reinit(t_cmd *command);
  */
 void ft_shell_command_remove_last(t_cmd **command);
 
-/**
- * Sauvegarde une nouvelle commande au début de la liste de commandes.
- * @param command Structure d'une Commande
- * @param historic_size Nombre de commandes
- * @param historic_max_size Nombre maximum de commandes
- * @return La taille de la liste.
- */
-size_t ft_shell_command_save(t_cmd *command,
-                             size_t historic_size,
-                             long   historic_max_size);
-
 /******************************************************************************
  * FONCTIONS UTILES DES ZONES DE TEXTE SURLIGNE
  ******************************************************************************/
@@ -306,6 +303,15 @@ size_t ft_shell_command_save(t_cmd *command,
  * @return Premier élément de la liste.
  */
 t_higharea *ft_command_highlight_first(const t_higharea *harea);
+
+/**
+ * @brief Retourne une zone de texte surlignées contenant la position actuelle
+ * dans le buffer de commande.
+ * @param[in] htexts Liste des zones surlignées
+ * @param[in] pos Position actuelle du curseur
+ * @return Zone surlignée de la position ou une nouvelle zone de surlignage.
+ */
+t_higharea *ft_command_highlight_get_area(t_higharea *htexts, size_t pos);
 
 /**
  * @brief Déplace les valeurs de début et de fin d'une zone de texte surligné.
@@ -351,9 +357,12 @@ t_higharea *ft_command_highlight_sort_area(t_higharea *harea);
 /**
  * @brief Fonction de deboggage des tokens après parsing d'une Commande.
  * @param token Liste de Token
- * @param buffer Buffer tokenisé
+ * @param buffer Buffer
+ * @param terminale Terminal du Shell
  */
-void ft_command_token_debug(const t_token *token, const uint8_t *buffer);
+void ft_command_token_debug(const t_token *token,
+                            const uint8_t *buffer,
+                            const t_term  *terminal);
 
 /**
  * @brief Découpe la commande passée en paramètre en une liste simplement chaînée de token.
@@ -364,10 +373,10 @@ void ft_command_token_debug(const t_token *token, const uint8_t *buffer);
  * @return La position du caractère dans la Commande responsable
  * de l'arrêt de la fonction.
  */
-size_t ft_command_token_recognition(t_token             **token,
-                                    const uint8_t        *buffer,
-                                    const uint8_t        *end_of_input,
-                                    const uint8_t * const ifs);
+size_t ft_command_token_recognition(t_token      **token,
+                                    const uint8_t *buffer,
+                                    const uint8_t *end_of_input,
+                                    const uint8_t *ifs);
 
 /**
  * @brief Désalloue une liste de token.

@@ -10,9 +10,9 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "ft_shell_history.h"
 #include "ft_shell_command.h"
 #include "ft_shell_environ.h"
+#include "ft_shell_history.h"
 #include "ft_shell_log.h"
 #include "ft_snprintf.h"
 #include "get_next_line.h"
@@ -25,26 +25,25 @@
 #include <sys/fcntl.h>
 #include <unistd.h>
 
-static size_t ft_shell_history_save_line(uint8_t *line,
-                                         t_cmd  **command,
-                                         size_t   history_size,
-                                         long     history_max_size);
+static void ft_shell_history_save_line(uint8_t *line,
+                                       t_cmd  **command,
+                                       t_hist  *history);
 
 void ft_shell_history_init(t_hist *history)
 {
     history->filepath = NULL;
-    history->max_size = 0;
+    history->length   = 0;
+    history->size     = 0;
 }
 
-size_t ft_shell_history_parse_file(t_cmd     **command,
-                                   t_hist     *history,
-                                   t_env      *environ,
-                                   const char *progname)
+void ft_shell_history_parse_file(t_cmd     **command,
+                                 t_hist     *history,
+                                 t_env      *environ,
+                                 const char *progname)
 {
     const char *ptr        = NULL;
     char        path[1024] = { 0 };
     uint8_t    *line       = NULL;
-    size_t      hist_size  = 0;
     int         filed      = 0;
 
     ptr = ft_shell_env_get_value("HOME", environ);
@@ -55,34 +54,85 @@ size_t ft_shell_history_parse_file(t_cmd     **command,
     ft_snprintf(path, sizeof(path), "%s/.%s_history", ptr, progname);
     history->filepath = ft_strdup(path);
     ptr               = ft_shell_env_get_value("42SH_HISTORY_SIZE", environ);
-    history->max_size = (ptr != NULL) ? ft_atoi(ptr) : ft_atoi(SHELL_HISTORY_MAX_ELEMS);
+    history->size     = (ptr != NULL) ? ft_atol(ptr) : ft_atol(SHELL_HISTORY_MAX_ELEMS);
     filed             = open(path, O_CREAT | O_RDONLY | O_CLOEXEC, 0644);
     if (filed < 0)
     {
         ft_shell_log(SH_LOG_LEVEL_WARN,
                      "Error opening historic file %s: %s",
                      path,
-                     strerror(errno));
-        errno = 0;
-        return (0);
+                     ft_shell_strerror());
+        return;
     }
     ft_shell_log(SH_LOG_LEVEL_DBG, "Parsing history file at %s", path);
     /* Parsing du fichier: une ligne == une commande */
     while (get_next_line(filed, (char **) &line) > 0)
     {
-        hist_size = ft_shell_history_save_line(line,
-                                               command,
-                                               hist_size,
-                                               history->max_size);
-        line      = NULL;
+        ft_shell_history_save_line(line, command, history);
+        line = NULL;
     }
     ft_shell_log(SH_LOG_LEVEL_DBG,
                  "Added %ld command%c from history (max %ld)",
-                 hist_size,
-                 (hist_size < 2) ? '\0' : 's',
-                 history->max_size);
+                 history->length,
+                 (history->length < 2) ? '\0' : 's',
+                 history->size);
     close(filed);
-    return (hist_size);
+}
+
+void ft_shell_history_save_command(t_hist *history, t_cmd *command)
+{
+    uint8_t *line  = command->buffer;
+    t_cmd   *cmd   = NULL;
+    t_cmd   *first = NULL;
+
+    /* Pas de sauvegarde
+     * Si la ligne est vide ou commence par un espace blanc */
+    if (line[0] == '\0'
+        || ft_iswhitespace((char) line[0])
+        || history->size <= 0)
+    {
+        /* Rien de plus à faire ici */
+        return;
+    }
+    first = ft_shell_command_get_first(command);
+    /* Recherche de doublon dans l'historique */
+    cmd   = ft_shell_command_get_last(command);
+    while (cmd->next != NULL)
+    {
+        /* Ligne déjà existante, on place la commande au début de la liste */
+        if (ft_ustrcmp(cmd->origin, line) == 0)
+        {
+            /* Si c'est déjà le premier élément de la liste, rien à faire */
+            if (cmd->next->next == NULL)
+            {
+                return;
+            }
+            /* Sinon on insère la commande au début de la liste */
+            if (cmd->prev != NULL)           /* *************************************** */
+            {                                /* ... <-> C <-- CMD <-> A <-> ... -> NULL */
+                cmd->prev->next = cmd->next; /*           \--------->                   */
+            }                                /* ... <-> C <-- CMD --> A <-> ... -> NULL */
+            cmd->next->prev = cmd->prev;     /*           <--------->                   */
+            cmd->next       = first;         /*                   CMD --> FIRST -> NULL */
+            cmd->prev       = first->prev;   /*           ... <-- CMD --> FIRST -> NULL */
+            cmd->prev->next = cmd;           /*           ... <-> CMD --> FIRST -> NULL */
+            first->prev     = cmd;           /*           ... <-> CMD <-> FIRST -> NULL */
+            return;                          /* *************************************** */
+        }
+        cmd = cmd->next;
+    }
+    /* Pas de doublon, on créé une nouvelle commande */
+    (void) ft_shell_command_new(line,
+                                first->prev,
+                                first,
+                                SHELL_COMMAND_NEW_DUPLICATE_LINE);
+    history->length++;
+    /* Suppression des éléments en trop */
+    while (history->length > history->size)
+    {
+        ft_shell_command_remove_last(&first->prev);
+        history->length--;
+    }
 }
 
 void ft_shell_history_save_to_file(const t_hist *history, const t_cmd *command)
@@ -106,8 +156,7 @@ void ft_shell_history_save_to_file(const t_hist *history, const t_cmd *command)
         ft_shell_log(SH_LOG_LEVEL_ERR,
                      "Error opening historic file %s: %s",
                      history->filepath,
-                     strerror(errno));
-        errno = 0;
+                     ft_shell_strerror());
         return;
     }
     /* Départ de la fin de l'historique */
@@ -127,10 +176,9 @@ void ft_shell_history_save_to_file(const t_hist *history, const t_cmd *command)
                  history->filepath);
 }
 
-static size_t ft_shell_history_save_line(uint8_t *line,
-                                         t_cmd  **command,
-                                         size_t   history_size,
-                                         long     history_max_size)
+static void ft_shell_history_save_line(uint8_t *line,
+                                       t_cmd  **command,
+                                       t_hist  *history)
 {
     t_cmd *cmd = *command;
     /* Pas de sauvegarde
@@ -138,7 +186,7 @@ static size_t ft_shell_history_save_line(uint8_t *line,
     if (line[0] == '\0' || ft_iswhitespace((char) line[0]))
     {
         free(line);
-        return (history_size);
+        return;
     }
     /* Recherche de doublon dans l'historique */
     while (cmd != NULL)
@@ -150,7 +198,7 @@ static size_t ft_shell_history_save_line(uint8_t *line,
             if (cmd->next == NULL)
             {
                 free(line);
-                return (history_size);
+                return;
             }
             /* Sinon on insère la commande au début de la liste */
             cmd->next->prev = cmd->prev;        /* ... <-> C <-> CMD --> A <-> *COMMAND -> NULL */
@@ -164,18 +212,17 @@ static size_t ft_shell_history_save_line(uint8_t *line,
                                                 /* ... <-> C <-> A <-> *COMMAND ---------> NULL */
             (*command)->next = cmd;             /* ... <-> C <-> A <-> *COMMAND <-> CMD -> NULL */
             free(line);                         /* ******************************************** */
-            return (history_size);
+            return;
         }
         cmd = cmd->prev;
     }
     /* Pas de doublon, on créé une nouvelle commande */
     *command = ft_shell_command_new(line, *command, NULL, SHELL_COMMAND_NEW_STEAL_LINE);
-    history_size++;
+    history->length++;
     /* Suppression des éléments en trop */
-    while ((long) history_size > history_max_size)
+    while (history->length > history->size)
     {
         ft_shell_command_remove_last(command);
-        history_size--;
+        history->length--;
     }
-    return (history_size);
 }

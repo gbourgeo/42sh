@@ -25,9 +25,9 @@ void ft_clear_modes(t_shell *shell)
         shell->command->harea = ft_command_highlight_remove_all(shell->command->harea); /* Supprime les zones de texte surligné de la commande */
         print                 = 1;
     }
-    if (TEST_BIT(shell->command->option, COMMAND_HIGHLIGHT_MODE))
+    if (_test_bit(shell->command->option, COMMAND_HIGHLIGHT_MODE))
     {
-        REMOVE_BIT(shell->command->option, COMMAND_HIGHLIGHT_MODE); /* Désactive le surlignage */
+        _remove_bit(shell->command->option, COMMAND_HIGHLIGHT_MODE); /* Désactive le surlignage */
         ft_term_clear_modes(&shell->terminal);                      /* Désactive tous les modes actifs */
         print = 1;
     }

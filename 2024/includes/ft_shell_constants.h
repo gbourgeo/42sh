@@ -29,11 +29,4 @@ enum e_shell_options
     SHELL_INTERACTIVE_MODE = 0x04, // 0000 0100
 };
 
-enum
-{
-    SHELL_KEY_SIZE           = 8,
-    SHELL_COMMAND_BUFFER_HOP = 128,
-    SHELL_PROMPT_MAX_LENGTH  = 1024,
-};
-
 #endif /* _FT_SHELL_CONSTANTS_H_ */

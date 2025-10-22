@@ -62,15 +62,15 @@ static echo_e echo_parse_options(const char **args, size_t *pos)
         {
             if (args[iter][jter] == 'n')
             {
-                REMOVE_BIT(option_save, ECHO_END_WITH_NEWLINE);
+                _remove_bit(option_save, ECHO_END_WITH_NEWLINE);
             }
             else if (args[iter][jter] == 'e')
             {
-                ASSIGN_BIT(option_save, ECHO_INTERPRET_ESCAPE_CHAR);
+                _set_bit(option_save, ECHO_INTERPRET_ESCAPE_CHAR);
             }
             else if (args[iter][jter] == 'E')
             {
-                REMOVE_BIT(option_save, ECHO_INTERPRET_ESCAPE_CHAR);
+                _remove_bit(option_save, ECHO_INTERPRET_ESCAPE_CHAR);
             }
             else
             {
@@ -79,12 +79,12 @@ static echo_e echo_parse_options(const char **args, size_t *pos)
             }
             jter++;
         }
-        TEST_BIT(option_save, ECHO_END_WITH_NEWLINE) ?
-            ASSIGN_BIT(option_ret, ECHO_END_WITH_NEWLINE) :
-            REMOVE_BIT(option_ret, ECHO_END_WITH_NEWLINE);
-        TEST_BIT(option_save, ECHO_INTERPRET_ESCAPE_CHAR) ?
-            ASSIGN_BIT(option_ret, ECHO_INTERPRET_ESCAPE_CHAR) :
-            REMOVE_BIT(option_ret, ECHO_INTERPRET_ESCAPE_CHAR);
+        _test_bit(option_save, ECHO_END_WITH_NEWLINE) ?
+            _set_bit(option_ret, ECHO_END_WITH_NEWLINE) :
+            _remove_bit(option_ret, ECHO_END_WITH_NEWLINE);
+        _test_bit(option_save, ECHO_INTERPRET_ESCAPE_CHAR) ?
+            _set_bit(option_ret, ECHO_INTERPRET_ESCAPE_CHAR) :
+            _remove_bit(option_ret, ECHO_INTERPRET_ESCAPE_CHAR);
         iter++;
     }
     *pos = iter;
@@ -102,7 +102,7 @@ int ft_echo(const char **args, t_shell *shell _unused)
         write(STDOUT_FILENO, " ", 1);
         iter++;
     }
-    if (TEST_BIT(option, ECHO_END_WITH_NEWLINE))
+    if (_test_bit(option, ECHO_END_WITH_NEWLINE))
     {
         write(STDOUT_FILENO, "\n", 1);
     }

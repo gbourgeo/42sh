@@ -16,8 +16,10 @@
 #include "ft_shell.h"
 #include "ft_shell_constants.h"
 #include "ft_vdprintf.h"
+#include <errno.h>
 #include <stdarg.h>
 #include <stdint.h>
+#include <string.h>
 #include <unistd.h>
 
 typedef struct _align(32) s_log
@@ -42,12 +44,12 @@ void ft_shell_log(log_level_e log_level, const char *file, uint32_t line,
     };
     va_list argp = { 0 };
 
-    if (log_level == SHELL_LOG_LEVEL_DBG && !TEST_BIT(g_shell.options, SHELL_DEBUG_MODE))
+    if (log_level == SHELL_LOG_LEVEL_DBG && !_test_bit(g_shell.options, SHELL_DEBUG_MODE))
     {
         return;
     }
     va_start(argp, err_str);
-    if (TEST_BIT(g_shell.options, SHELL_DEBUG_MODE))
+    if (_test_bit(g_shell.options, SHELL_DEBUG_MODE))
     {
         ft_dprintf(log_print[log_level].fd,
                    "%s%s %s: %s:%d ",
@@ -71,4 +73,11 @@ void ft_shell_log(log_level_e log_level, const char *file, uint32_t line,
 
     g_shell.status = (int) log_print[log_level].status;
     g_shell.quit   = log_print[log_level].quit;
+}
+
+char *ft_shell_strerror(void)
+{
+    char *error = strerror(errno);
+    errno = 0;
+    return (error);
 }

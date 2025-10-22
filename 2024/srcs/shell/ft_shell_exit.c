@@ -17,7 +17,6 @@
 #include "ft_shell_environ.h"
 #include "ft_shell_history.h"
 #include "ft_shell_log.h"
-#include "ft_shell_prompt.h"
 #include "ft_shell_terminal.h"
 #include <signal.h>
 #include <stdlib.h>
@@ -27,12 +26,11 @@ void ft_shell_exit(t_shell *shell)
 {
     int iter = 1;
 
-    if (TEST_BIT(shell->options, SHELL_TERMATTR_LOADED)
+    if (_test_bit(shell->options, SHELL_TERMATTR_LOADED)
      && tcsetattr(shell->fd, TCSANOW, &shell->terminal.ios) == -1)
     {
         ft_shell_log(SH_LOG_LEVEL_FATAL, "failed to restore terminal attributes");
     }
-    ft_shell_prompt_clear(&shell->prompt);
     ft_shell_history_save_to_file(&shell->history, shell->command);
     ft_shell_command_delete_all(shell->command);
     free(shell->yank);

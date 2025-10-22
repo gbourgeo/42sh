@@ -78,8 +78,8 @@ SHELL_SRC = ft_shell_args_exec.c     \
 
 TERMINAL_SRC = ft_shell_terminal.c
 
-TOKEN_SRC = ft_shell_token.c         \
-			ft_shell_token_debug.c
+TOKEN_SRC = ft_command_token.c          \
+			ft_command_token_debug.c
 
 # Objects
 OBJ_DIR = obj/

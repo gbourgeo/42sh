@@ -10,38 +10,133 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "ft_shell_prompt.h"
 #include "ft_defines.h"
-#include "ft_shell_constants.h"
 #include "ft_shell_environ.h"
+#include "ft_shell_prompt.h"
 #include "ft_shell_terminal.h"
 #include "libft.h"
 #include <stddef.h>
 
-typedef int (*promt_option_handler)(char *, size_t *, const char *);
+typedef int (*promt_option_handler)(t_prompt    *,
+                                    const char  *,
+                                    size_t      *,
+                                    const t_env *);
 
 typedef struct _align(16) s_prompt_options
 {
     const char           value;
     promt_option_handler handler;
-
 } t_poptions;
 
+/**
+* @brief Formats supportés par l'option '%F{...}'
+ */
 typedef struct _align(16) s_prompt_formats
-
 {
-    const char *name;
-    const char *format;
+    const char *name;   /* Nom du format */
+    const char *format; /* Valeur d'échappement */
 } t_pformats;
 
-static int ft_shell_prompt_handle_format(char *prompt, size_t *promptlen, const char *psone, size_t *psonepos)
-{
-    size_t prompt_len = *promptlen;
-    size_t pos        = *psonepos;
-    int    ret        = 0;
+/************************************/
+/* FONCTIONS PRIVEES                */
+/************************************/
 
-    pos++;
-    if (psone[pos] == '{')
+static int internal_shell_prompt_handle_format(t_prompt *prompt, const char *psone, size_t *pos, const t_env *environ);
+static int internal_shell_prompt_handle_progname(t_prompt *prompt, const char *psone, size_t *pos, const t_env *environ);
+static int internal_shell_prompt_handle_username(t_prompt *prompt, const char *psone, size_t *pos, const t_env *environ);
+static int internal_shell_prompt_handle_curdir(t_prompt *prompt, const char *psone, size_t *pos, const t_env *environ);
+static int internal_shell_prompt_handle_str(t_prompt *prompt, const char *str);
+
+/************************************/
+/* FONCTIONS PUBLIQUES              */
+/************************************/
+
+void ft_shell_prompt_create(t_prompt *prompt, const t_env *environ)
+{
+    t_poptions options[] = {
+        { .value = 'F', .handler = internal_shell_prompt_handle_format },   // Format
+        { .value = 'p', .handler = internal_shell_prompt_handle_progname }, // Nom du programme
+        { .value = 'u', .handler = internal_shell_prompt_handle_username }, // Nom d'utilisateur
+        { .value = 'w', .handler = internal_shell_prompt_handle_curdir },   // Répertoire courant
+    };
+    const char *psone    = ft_shell_env_get_value("PS1", environ);
+    size_t      pos      = 0;
+    size_t      last_pos = 0;
+    int         ret      = 0;
+
+    ft_shell_prompt_init(prompt);
+    prompt->doprint = 1;
+    if (psone == NULL)
+    {
+        psone = SHELL_PROMPT_DEFAULT_STR;
+    }
+    while (psone[pos] != '\0' && ret == 0)
+    {
+        if (psone[pos] == '%')
+        {
+            if (pos > last_pos)
+            {
+                ft_strncpy(prompt->str + prompt->real_len,
+                           psone + last_pos,
+                           pos - last_pos);
+                prompt->real_len    += (pos - last_pos);
+                prompt->printed_len += (pos - last_pos);
+            }
+            pos++;
+            size_t iter = 0;
+
+            while (iter < _length_of(options))
+            {
+                if (psone[pos] == options[iter].value)
+                {
+                    ret = options[iter].handler(prompt, psone, &pos, environ);
+                    break;
+                }
+                iter++;
+            }
+            last_pos = pos + 1;
+        }
+        pos++;
+    }
+    if (pos > last_pos)
+    {
+        ft_strncpy(prompt->str + prompt->real_len, psone + last_pos, pos - last_pos);
+        prompt->real_len += (pos - last_pos);
+    }
+}
+
+void ft_shell_prompt_init(t_prompt *prompt)
+{
+    prompt->str[0]      = '\0';
+    prompt->real_len    = 0;
+    prompt->printed_len = 0;
+    prompt->doprint     = 0;
+}
+
+void ft_shell_prompt_print(t_prompt *prompt, t_term *terminal)
+{
+    if (prompt->doprint == 1)
+    {
+        prompt->doprint = 0;
+        /* Efface depuis le curseur jusqu'à la fin du terminal */
+        ft_term_clear_line_and_under(terminal);
+        ft_putstr(prompt->str);
+        /* Récupère la position du curseur */
+        ft_shell_terminal_get_cursor_position(terminal, SET_CURSOR_ALL);
+    }
+}
+
+
+static int internal_shell_prompt_handle_format(
+    t_prompt    *prompt,
+    const char  *psone,
+    size_t      *pos,
+    const t_env *environ _unused)
+{
+    int ret = 0;
+
+    (*pos)++;
+    if (psone[*pos] == '{')
     {
         /* Formats supportés */
         static t_pformats formats[] = {
@@ -95,193 +190,113 @@ static int ft_shell_prompt_handle_format(char *prompt, size_t *promptlen, const 
             { .name = "bg-bright-cyan",    .format = "106" }, // Couleur : cyan éclairé
             { .name = "bg-bright-white",   .format = "107" }, // Couleur : blanc éclairé
         };
-        size_t start = pos + 1;
+        size_t start = *pos + 1;
         size_t iter  = 0;
         int    first = 0;
 
-        ft_strncpy(prompt + prompt_len, "\033[", ft_strlen("\033["));
-        prompt_len += ft_strlen("\033[");
+        ft_strncpy(prompt->str + prompt->real_len, "\033[", ft_strlen("\033["));
+        prompt->real_len += ft_strlen("\033[");
 
-        while (psone[pos] != '\0'
+        while (psone[*pos] != '\0'
                && ret == 0)
         {
-            pos++;
-            if (psone[pos] == ',' || psone[pos] == '}')
+            (*pos)++;
+            if (psone[*pos] == ',' || psone[*pos] == '}')
             {
                 iter = 0;
-                while (iter < LENGTH_OF(formats))
+                while (iter < _length_of(formats))
                 {
-                    if (ft_strncmp(formats[iter].name, psone + start, start - pos) == 0)
+                    if (ft_strncmp(formats[iter].name, psone + start, start - *pos) == 0)
                     {
                         if (first != 0)
                         {
-                            if (prompt_len + 1 >= SHELL_PROMPT_MAX_LENGTH - 1)
+                            if (prompt->real_len + 1 >= SHELL_PROMPT_MAX_LENGTH - 1)
                             {
                                 ret = 1;
                                 break;
                             }
-                            ft_strcpy(prompt + prompt_len, ";");
-                            prompt_len += 1;
+                            ft_strcpy(prompt->str + prompt->real_len, ";");
+                            prompt->real_len += 1;
                         }
                         first = 1;
-                        if (prompt_len + ft_strlen(formats[iter].format) >= SHELL_PROMPT_MAX_LENGTH - 1)
+                        if (prompt->real_len + ft_strlen(formats[iter].format) >= SHELL_PROMPT_MAX_LENGTH - 1)
                         {
                             ret = 1;
                             break;
                         }
-                        ft_strcpy(prompt + prompt_len, formats[iter].format);
-                        prompt_len += ft_strlen(formats[iter].format);
+                        ft_strcpy(prompt->str + prompt->real_len, formats[iter].format);
+                        prompt->real_len += ft_strlen(formats[iter].format);
                         break;
                     }
                     iter++;
                 }
-                if (psone[pos] == '}')
+                if (psone[*pos] == '}')
                 {
                     break;
                 }
-                start = pos + 1;
+                start = *pos + 1;
             }
         }
     }
-    ft_strncpy(prompt + prompt_len, "m", 1);
-    prompt_len += 1;
-    *promptlen = prompt_len;
-    *psonepos  = pos;
-
+    ft_strncpy(prompt->str + prompt->real_len, "m", 1);
+    prompt->real_len += 1;
     return (ret);
 }
 
-static int ft_shell_prompt_handle_str(char *prompt, size_t *prompt_len, const char *str)
+static int internal_shell_prompt_handle_progname(
+    t_prompt    *prompt,
+    const char  *psone _unused,
+    size_t      *pos _unused,
+    const t_env *environ)
 {
-    if (*prompt_len + ft_strlen(str) > SHELL_PROMPT_MAX_LENGTH)
+    const char *progname = ft_shell_env_get_value("SHELL", environ);
+    int         ret      = 0;
+
+    ret = internal_shell_prompt_handle_str(prompt, progname);
+    return (ret);
+}
+
+static int internal_shell_prompt_handle_username(
+    t_prompt    *prompt,
+    const char  *psone _unused,
+    size_t      *pos _unused,
+    const t_env *environ)
+{
+    const char *user = ft_shell_env_get_value("USER", environ);
+    int         ret  = 0;
+
+    ret = internal_shell_prompt_handle_str(prompt, user);
+    return (ret);
+}
+
+static int internal_shell_prompt_handle_curdir(
+    t_prompt    *prompt,
+    const char  *psone _unused,
+    size_t      *pos _unused,
+    const t_env *environ)
+{
+    const char *pwd  = ft_shell_env_get_value("PWD", environ);
+    const char *home = ft_shell_env_get_value("HOME", environ);
+    int         ret  = 0;
+
+    if (ft_strncmp(pwd, home, ft_strlen(home)) == 0)
+    {
+        ret = internal_shell_prompt_handle_str(prompt, "~");
+        pwd += ft_strlen(home);
+    }
+    ret += internal_shell_prompt_handle_str(prompt, pwd);
+    return (ret);
+}
+
+static int internal_shell_prompt_handle_str(t_prompt *prompt, const char *str)
+{
+    if (prompt->real_len + ft_strlen(str) > SHELL_PROMPT_MAX_LENGTH)
     {
         // Message d'erreur ?
         return (1);
     }
-    ft_strcpy(prompt + *prompt_len, str);
-    *prompt_len += ft_strlen(str);
+    ft_strcpy(prompt->str + prompt->real_len, str);
+    prompt->real_len += ft_strlen(str);
+    prompt->printed_len += ft_strlen(str);
     return (0);
-}
-
-void ft_shell_prompt_create(t_prompt *prompt, t_env *environ)
-{
-    const char *psone                               = NULL;
-    char        prompt_str[SHELL_PROMPT_MAX_LENGTH] = { 0 };
-    size_t      prompt_len                          = 0;
-    size_t      prompt_printed_len                  = 0;
-    size_t      pos                                 = 0;
-    size_t      last_pos                            = 0;
-
-    ft_freestr(&prompt->str);
-    prompt->real_len    = 0;
-    prompt->printed_len = 0;
-    prompt->print       = 1;
-    psone               = ft_shell_env_get_value("PS1", environ);
-
-    if (psone == NULL)
-    {
-        return;
-    }
-    while (psone[pos] != '\0')
-    {
-        if (psone[pos] == '%')
-        {
-            if (pos > last_pos)
-            {
-                ft_strncpy(prompt_str + prompt_len, psone + last_pos, pos - last_pos);
-                prompt_len += (pos - last_pos);
-                prompt_printed_len += (pos - last_pos);
-            }
-            pos++;
-            if (psone[pos] == 'F') // Format
-            {
-                if (ft_shell_prompt_handle_format(prompt_str, &prompt_len, psone, &pos) != 0)
-                {
-                    // Message d'erreur ?
-                    break;
-                }
-            }
-            else if (psone[pos] == 'p') // Nom du programme
-            {
-                const char *progname = ft_shell_env_get_value("SHELL", environ);
-
-                if (ft_shell_prompt_handle_str(prompt_str, &prompt_len, progname) != 0)
-                {
-                    // Message d'erreur ?
-                    break;
-                }
-                prompt_printed_len += ft_strlen(progname);
-            }
-            else if (psone[pos] == 'u') // Nom d'utilisateur
-            {
-                const char *user = ft_shell_env_get_value("USER", environ);
-
-                if (ft_shell_prompt_handle_str(prompt_str, &prompt_len, user) != 0)
-                {
-                    // Message d'erreur ?
-                    break;
-                }
-                prompt_printed_len += ft_strlen(user);
-            }
-            else if (psone[pos] == 'w') // Répertoire courant
-            {
-                const char *pwd  = ft_shell_env_get_value("PWD", environ);
-                const char *home = ft_shell_env_get_value("HOME", environ);
-
-                if (ft_strncmp(pwd, home, ft_strlen(home)) == 0)
-                {
-                    if (ft_shell_prompt_handle_str(prompt_str, &prompt_len, "~") != 0)
-                    {
-                        // Message d'erreur ?
-                        break;
-                    }
-                    prompt_printed_len += 1;
-                    pwd += ft_strlen(home);
-                }
-                if (ft_shell_prompt_handle_str(prompt_str, &prompt_len, pwd) != 0)
-                {
-                    // Message d'erreur ?
-                    break;
-                }
-                prompt_printed_len += ft_strlen(pwd);
-            }
-            last_pos = pos + 1;
-        }
-        pos++;
-    }
-    if (pos > last_pos)
-    {
-        ft_strncpy(prompt_str + prompt_len, psone + last_pos, pos - last_pos);
-        prompt_len += (pos - last_pos);
-    }
-    prompt->str         = ft_strdup(prompt_str);
-    prompt->real_len    = prompt_len;
-    prompt->printed_len = prompt_printed_len;
-    prompt->print       = 1;
-}
-
-void ft_shell_prompt_print(t_prompt *prompt, t_term *terminal)
-{
-    if (prompt->print == 1)
-    {
-        prompt->print = 0;
-        /* Efface depuis le curseur jusqu'à la fin du terminal */
-        ft_term_clear_line_and_under(terminal);
-        ft_putstr(prompt->str);
-        /* Récupère la position du curseur */
-        ft_shell_terminal_get_cursor_position(terminal, SET_CURSOR_ALL);
-    }
-}
-
-void ft_shell_prompt_init(t_prompt *prompt)
-{
-    prompt->str         = NULL;
-    prompt->real_len    = 0;
-    prompt->printed_len = 0;
-    prompt->print       = 0;
-}
-
-void ft_shell_prompt_clear(t_prompt *prompt)
-{
-    ft_freestr(&prompt->str);
 }

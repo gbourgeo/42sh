@@ -10,7 +10,6 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "ft_defines.h"
 #include "ft_shell.h"
 #include "ft_shell_builtins.h"
 #include "ft_shell_command.h"
@@ -20,18 +19,8 @@
 
 void ft_control_c(t_shell *shell)
 {
-    /* Reset des modes */
-    if (TEST_BIT(shell->command->option, COMMAND_HIGHLIGHT_MODE))
-    {
-        ft_term_clear_modes(&shell->terminal);
-        REMOVE_BIT(shell->command->option, COMMAND_HIGHLIGHT_MODE);
-    }
     write(STDOUT_FILENO, "^C", 2);
-    ft_move_cursor_end_of_command(shell);
-    ft_term_move_cursor_down(&shell->terminal);
-    /* Reset de la commande */
-    shell->command = ft_shell_command_reinit(shell->command);
-    shell->prompt.print = 1;
+    ft_shell_interactive_reinit(shell, SHELL_COMMAND_DONT_SAVE);
 }
 
 void ft_control_d(t_shell *shell)

@@ -1,7 +1,7 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   ft_shell_token.c                                   :+:      :+:    :+:   */
+/*   ft_command_token.c                                 :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: gbourgeo <gbourgeo@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
@@ -15,6 +15,155 @@
 #include "libft.h"
 #include <stdint.h>
 #include <stdlib.h>
+
+static t_token *ft_token_new(e_token_type token_type, size_t pos);
+static t_token **ft_token_end(t_token **token, const uint8_t *buffer, size_t pos);
+static unsigned char is_special(const uint8_t *buffer, const uint8_t *ifs);
+static char can_form_an_operator(t_token **token, const uint8_t *buffer, size_t pos);
+static int token_is_an_operator(const t_token **token);
+static int token_is_a_newline(const t_token **token);
+static size_t can_form_an_expansion(t_token **token, const uint8_t *buffer, size_t pos, const uint8_t *ifs);
+static int is_end_of_input(const uint8_t *buffer, const uint8_t *end_of_input);
+static size_t can_form_a_comment(t_token **token, const uint8_t *buffer, size_t pos);
+
+size_t ft_command_token_recognition(t_token      **token,
+                                    const uint8_t *buffer,
+                                    const uint8_t *end_of_input,
+                                    const uint8_t *ifs)
+{
+    t_token     **current_token = token;
+    size_t        pos           = 0;
+    unsigned char character[2]  = { 0 };
+
+    /**
+     * POSIX Shell 2.6.5 Field Splitting
+     *  2. If the value of IFS is null, no field splitting shall be performed.
+     */
+    if (ifs == NULL)
+    {
+        *token = ft_token_new(TOKEN, 0); // Création d'un unique token !
+        pos = ft_ustrlen(buffer);
+        (void) ft_token_end(current_token, buffer, pos); // Fin de token !
+        return (pos);
+    }
+
+    /**
+     * "character" fonctionne comme ceci:
+     * 00000000   00000000   <- début
+     * caractère     |||||__ bit indiquant que le caractère courant est une quote
+     * de quote      ||||___ bit indiquant que le caractère courant est un opérateur
+     * ou d'         |||____ bit indiquant que le caractère courant est un commentaire
+     * expansion     ||_____ bit indiquant que le caractère courant est un séparateur de mot
+     *               |______ bit indiquant que le caractère courant est un délimiteur d'expansion
+     */
+
+    while (buffer[pos] != '\0')
+    {
+        _clear_8bit(character[0]);
+        character[0] |= is_special(buffer + pos, ifs);
+
+        if (is_end_of_input(buffer + pos, end_of_input)) // Caractère(s) de fin ...
+        {
+            if (!CHARACTER_IS_QUOTED(character))         // ET qu'ils ne sont pas quotés ...
+            {
+                pos += ft_ustrlen(end_of_input);    // Incrément de l'itérateur
+                break;                                   // Fin !
+            }
+        }
+        if (token_is_an_operator((const t_token **) current_token))  // Si le token courant est un opérateur ...
+        {
+            if ((CHARACTER_IS_AN_OPERATOR(character) || buffer[pos] == '-') // Si le caractère courant est un opérateur ou '-',
+                && can_form_an_operator(current_token, buffer, pos)) // Et qu'ils peuvent former un opérateur ...
+            {
+                pos++;
+                continue;                                                   // Caractère suivant.
+            }
+            current_token = ft_token_end(current_token, buffer, pos);// Sinon fin de token !
+        }
+        if (CHARACTER_IS_A_QUOTE(character))                                // Si le caractère courant est une quote ... ( \ ou " ou ' )
+        {
+            if (!CHARACTER_IS_QUOTED(character))                            // ET qu'il n'est pas quoté ...
+            {
+                QUOTE_VALUE(character) = (unsigned char) buffer[pos];       // Sauvegarde du caractère de quote.
+                if (current_token == NULL || *current_token == NULL)        // Si le nouveau token est NULL ...
+                {
+                    current_token  = ft_token_end(current_token, buffer, pos); // Fin de token !
+                    *current_token = ft_token_new(TOKEN, pos);            // Création d'un nouveau token !
+                }
+            }
+            else if (QUOTE_VALUE(character) == (unsigned char) buffer[pos]) // OU qu'il termine la quote existante,
+            {
+                QUOTE_VALUE(character) = 0;                                 // Reset de la quote sauvegardée.
+            }
+        }
+        else if (CHARACTER_IS_AN_EXPANSION(character)) // Si le caractère courant est le début d'une expansion ... ( $ ou ` )
+        {
+            if (!CHARACTER_IS_QUOTED(character))       // ET qu'il n'est pas quoté ...
+            {
+                pos = can_form_an_expansion(current_token, buffer, pos, ifs);
+            }
+        }
+        else if (CHARACTER_IS_AN_OPERATOR(character))                      // Si le caractère courant est un opérateur ...
+        {
+            if (!CHARACTER_IS_QUOTED(character))                           // ET qu'il n'est pas déjà quotée ...
+            {
+                current_token  = ft_token_end(current_token, buffer, pos); // Fin de token !
+                *current_token = ft_token_new(OPERATOR, pos);         // Création d'un nouveau token !
+            }
+        }
+        else if (CHARACTER_IS_NEWLINE(buffer[pos]))                                        // Si le caractère courant est une newline (\n)...
+        {
+            if (!CHARACTER_IS_QUOTED(character)                                            // Qu'il n'est pas quoté...
+                && !token_is_a_newline((const t_token **) current_token))           // Et que le token n'est pas de type NEWLINE ...
+            {
+                current_token  = ft_token_end(current_token, buffer, pos);          // Fin de token !
+                *current_token = ft_token_new(NEWLINE, pos);                   // Création d'un nouveau token !
+                current_token  = ft_token_end(current_token, buffer, pos + 1); // Fin de token !
+            }
+        }
+        else if (CHARACTER_IS_A_SEPARATOR(character))                     // Si le caractère courant est un séparateur... (généralement un whitespace)
+        {
+            if (!CHARACTER_IS_QUOTED(character))                          // ET qu'il n'est pas quoté...
+            {
+                current_token = ft_token_end(current_token, buffer, pos); // Fin de token !
+            }
+        }
+        else if (CHARACTER_IS_A_COMMENT(character)) // Si le caractère courant est le début d'un commentaire (#)...
+        {
+            if (!CHARACTER_IS_QUOTED(character))    // ET qu'il n'est pas quoté...
+            {
+                pos = can_form_a_comment(current_token, buffer, pos);
+            }
+        }
+        if (*current_token == NULL && !CHARACTER_IS_A_SEPARATOR(character)) // Si le token courant est NULL et pas un séparateur de mot ...
+        {
+            *current_token = ft_token_new(TOKEN, pos);                      // Création d'un nouveau token !
+        }
+        if (QUOTE_VALUE(character) == '\\' && pos > 0                       // Si le caractère de quote est '\' et que le
+            && buffer[pos - 1] == '\\')                                     // caractère précédent était un '\'...
+        {
+            QUOTE_VALUE(character) = 0;                                     // Reset de la quote sauvegardée.
+        }
+        pos++;
+    }
+
+    (void) ft_token_end(current_token, buffer, pos); // Fin de token !
+
+    return (pos);
+}
+
+void ft_command_token_remove_all(t_token *token)
+{
+    t_token *next = NULL;
+
+    while (token != NULL)
+    {
+        next = token->next;
+        ft_command_token_remove_all(token->nested_token);
+        free(token);
+        token = next;
+    }
+}
 
 /**
  * @brief Création d'un nouveau token.
@@ -353,144 +502,4 @@ static size_t can_form_a_comment(t_token      **token,
         }
     }
     return (pos);
-}
-
-size_t ft_command_token_recognition(
-    t_token             **token,
-    const uint8_t        *buffer,
-    const uint8_t        *end_of_input,
-    const uint8_t * const ifs)
-{
-    t_token     **current_token = token;
-    size_t        pos           = 0;
-    unsigned char character[2]  = { 0 };
-
-    /**
-     * POSIX Shell 2.6.5 Field Splitting
-     *  2. If the value of IFS is null, no field splitting shall be performed.
-     */
-    if (ifs == NULL)
-    {
-        *token = ft_token_new(TOKEN, 0); // Création d'un unique token !
-        pos = ft_ustrlen(buffer);
-        (void) ft_token_end(current_token, buffer, pos); // Fin de token !
-        return (pos);
-    }
-
-    /**
-     * "character" fonctionne comme ceci:
-     * 00000000   00000000   <- début
-     * caractère     |||||__ bit indiquant que le caractère courant est une quote
-     * de quote      ||||___ bit indiquant que le caractère courant est un opérateur
-     * ou d'         |||____ bit indiquant que le caractère courant est un commentaire
-     * expansion     ||_____ bit indiquant que le caractère courant est un séparateur de mot
-     *               |______ bit indiquant que le caractère courant est un délimiteur d'expansion
-     */
-
-    while (buffer[pos] != '\0')
-    {
-        CLEAR_8BIT(character[0]);
-        character[0] |= is_special(buffer + pos, ifs);
-
-        if (is_end_of_input(buffer + pos, end_of_input)) // Caractère(s) de fin ...
-        {
-            if (!CHARACTER_IS_QUOTED(character))         // ET qu'ils ne sont pas quotés ...
-            {
-                pos += ft_ustrlen(end_of_input);         // Incrément de l'itérateur
-                break;                                   // Fin !
-            }
-        }
-        if (token_is_an_operator((const t_token **) current_token))         // Si le token courant est un opérateur ...
-        {
-            if ((CHARACTER_IS_AN_OPERATOR(character) || buffer[pos] == '-') // Si le caractère courant est un opérateur ou '-',
-                && can_form_an_operator(current_token, buffer, pos))        // Et qu'ils peuvent former un opérateur ...
-            {
-                pos++;
-                continue;                                                      // Caractère suivant.
-            }
-            current_token = ft_token_end(current_token, buffer, pos);          // Sinon fin de token !
-        }
-        if (CHARACTER_IS_A_QUOTE(character))                                   // Si le caractère courant est une quote ... ( \ ou " ou ' )
-        {
-            if (!CHARACTER_IS_QUOTED(character))                               // ET qu'il n'est pas quoté ...
-            {
-                QUOTE_VALUE(character) = (unsigned char) buffer[pos];          // Sauvegarde du caractère de quote.
-                if (current_token == NULL || *current_token == NULL)           // Si le nouveau token est NULL ...
-                {
-                    current_token  = ft_token_end(current_token, buffer, pos); // Fin de token !
-                    *current_token = ft_token_new(TOKEN, pos);                 // Création d'un nouveau token !
-                }
-            }
-            else if (QUOTE_VALUE(character) == (unsigned char) buffer[pos]) // OU qu'il termine la quote existante,
-            {
-                QUOTE_VALUE(character) = 0;                                 // Reset de la quote sauvegardée.
-            }
-        }
-        else if (CHARACTER_IS_AN_EXPANSION(character)) // Si le caractère courant est le début d'une expansion ... ( $ ou ` )
-        {
-            if (!CHARACTER_IS_QUOTED(character))       // ET qu'il n'est pas quoté ...
-            {
-                pos = can_form_an_expansion(current_token, buffer, pos, ifs);
-            }
-        }
-        else if (CHARACTER_IS_AN_OPERATOR(character))                      // Si le caractère courant est un opérateur ...
-        {
-            if (!CHARACTER_IS_QUOTED(character))                           // ET qu'il n'est pas déjà quotée ...
-            {
-                current_token  = ft_token_end(current_token, buffer, pos); // Fin de token !
-                *current_token = ft_token_new(OPERATOR, pos);              // Création d'un nouveau token !
-            }
-        }
-        else if (CHARACTER_IS_A_SEPARATOR(character))                     // Si le caractère courant est un séparateur... (généralement un whitespace)
-        {
-            if (!CHARACTER_IS_QUOTED(character))                          // ET qu'il n'est pas quoté...
-            {
-                current_token = ft_token_end(current_token, buffer, pos); // Fin de token !
-            }
-        }
-        else if (CHARACTER_IS_A_COMMENT(character)) // Si le caractère courant est le début d'un commentaire (#)...
-        {
-            if (!CHARACTER_IS_QUOTED(character))    // ET qu'il n'est pas quoté...
-            {
-                pos = can_form_a_comment(current_token, buffer, pos);
-            }
-        }
-        else if (CHARACTER_IS_NEWLINE(buffer[pos]))                              // Si le caractère courant est une newline (\n)...
-        {
-            if (!CHARACTER_IS_QUOTED(character)                                // Qu'il n'est pas quoté...
-                && !token_is_a_newline((const t_token **) current_token))      // Et que le token n'est pas de type NEWLINE ...
-            {
-                current_token  = ft_token_end(current_token, buffer, pos);     // Fin de token !
-                *current_token = ft_token_new(NEWLINE, pos);                   // Création d'un nouveau token !
-                current_token  = ft_token_end(current_token, buffer, pos + 1); // Fin de token !
-            }
-        }
-        if (*current_token == NULL && !CHARACTER_IS_A_SEPARATOR(character)) // Si le token courant est NULL et pas un séparateur de mot ...
-        {
-            *current_token = ft_token_new(TOKEN, pos);                      // Création d'un nouveau token !
-        }
-        if (QUOTE_VALUE(character) == '\\' && pos > 0                       // Si le caractère de quote est '\' et que le
-            && buffer[pos - 1] == '\\')                                     // caractère précédent était un '\'...
-        {
-            QUOTE_VALUE(character) = 0;                                     // Reset de la quote sauvegardée.
-        }
-        pos++;
-    }
-
-    (void) ft_token_end(current_token, buffer, pos); // Fin de token !
-
-    return (pos);
-}
-
-void ft_command_token_remove_all(t_token *token)
-{
-    t_token *next = NULL;
-
-    while (token != NULL)
-    {
-        next = token->next;
-        ft_command_token_remove_all(token->nested_token);
-        free(token);
-        token = next;
-    }
 }

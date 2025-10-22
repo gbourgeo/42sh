@@ -11,68 +11,17 @@
 /* ************************************************************************** */
 
 #include "ft_defines.h"
+#include "ft_dynamic_table.h"
 #include "ft_printf.h"
 #include "ft_shell.h"
 #include "ft_shell_builtin_env.h"
 #include "ft_shell_builtins.h"
+#include "ft_shell_environ.h"
 #include "ft_shell_log.h"
 #include "libft.h"
 #include <stddef.h>
 #include <stdlib.h>
 #include <unistd.h>
-
-/**
- * @brief Remove environment variable from environment.
- * @param varname Environment variable name
- * @param env Environment
- * @return Same environment without the variable.
- */
-static char **ft_env_remove_from_env(const char *varname, char **env)
-{
-    size_t iter = 0;
-
-    if (env == NULL)
-    {
-        return (env);
-    }
-    while (env[iter] != NULL)
-    {
-        if (ft_strcmp(env[iter], varname) == '=')
-        {
-            free(env[iter]);
-            while (env[iter + 1] != NULL)
-            {
-                env[iter] = env[iter + 1];
-                iter++;
-            }
-            env[iter] = NULL;
-            break;
-        }
-        iter++;
-    }
-    return (env);
-}
-
-static char **ft_env_add_to_env(const char *name, char **env)
-{
-    size_t iter = 0;
-
-    if (env != NULL)
-    {
-        while (env[iter] != NULL)
-        {
-            if (ft_strcmp(env[iter], name) == '=')
-            {
-                free(env[iter]);
-                env[iter] = ft_strdup(name);
-                return (env);
-            }
-            iter++;
-        }
-        env = (char **) ft_env_add_var_to_table(env, ft_strdup(name));
-    }
-    return (env);
-}
 
 static void ft_env_usage(const char *builtin_name)
 {
@@ -90,8 +39,6 @@ static void ft_env_usage(const char *builtin_name)
 static void ft_env_init(t_builtin_env *env, const char *builtin_name)
 {
     env->builtin_name = builtin_name;
-    env->cpy          = NULL;
-    env->save         = NULL;
     env->change_dir   = NULL;
     env->working_dir  = NULL;
     env->unset_env    = NULL;
@@ -101,7 +48,7 @@ static void ft_env_init(t_builtin_env *env, const char *builtin_name)
 
 static void ft_env_free(t_builtin_env *env)
 {
-    ft_freetab(&env->cpy);
+    ft_dynamic_table_free(&env->cpy);
     if (env->working_dir)
     {
         chdir(env->working_dir);
@@ -124,30 +71,34 @@ int ft_env(const char **args, t_shell *shell)
         ft_env_free(&env);
         return (1);
     }
-    if (TEST_BIT(env.option, ENV_PRINT_HELP))
+    if (_test_bit(env.option, ENV_PRINT_HELP))
     {
         ft_env_usage(args[0]);
         ft_env_free(&env);
         return (0);
     }
-    if (TEST_BIT(env.option, ENV_NO_ENV))
+    if (_test_bit(env.option, ENV_NO_ENV))
     {
-        if (TEST_BIT(env.option, ENV_VERBOSE))
+        if (_test_bit(env.option, ENV_VERBOSE))
         {
             ft_putendl("cleaning environ");
         }
-        ft_tabdel(&env.cpy);
+        ft_dynamic_table_free(&env.cpy);
     }
     else if (env.unset_env != NULL)
     {
         iter = 0;
         while (env.unset_env[iter] != NULL)
         {
-            if (TEST_BIT(env.option, ENV_VERBOSE))
+            if (_test_bit(env.option, ENV_VERBOSE))
             {
                 ft_printf("unset:     %s\n", env.unset_env[iter]);
             }
-            env.cpy = ft_env_remove_from_env(env.unset_env[iter], env.cpy);
+            t_envelem *elem = ft_shell_env_get_elem(&env.cpy, env.unset_env[iter]);
+            if (elem != NULL)
+            {
+                ft_dynamic_table_remove_elem(&env.cpy, elem);
+            }
             iter++;
         }
     }
@@ -156,18 +107,18 @@ int ft_env(const char **args, t_shell *shell)
         iter = 0;
         while (env.set_env[iter] != NULL)
         {
-            if (TEST_BIT(env.option, ENV_VERBOSE))
+            if (_test_bit(env.option, ENV_VERBOSE))
             {
                 ft_printf("setenv:    %s\n", env.set_env[iter]);
             }
-            env.cpy = ft_env_add_to_env(env.set_env[iter], env.cpy);
+            ft_shell_env_add_envvar(&env.cpy, env.set_env[iter]);
             iter++;
         }
     }
     if (env.change_dir != NULL)
     {
         env.working_dir = getcwd(NULL, 0);
-        if (TEST_BIT(env.option, ENV_VERBOSE))
+        if (_test_bit(env.option, ENV_VERBOSE))
         {
             ft_printf("chdir:     '%s'\n", env.change_dir);
         }
@@ -180,26 +131,27 @@ int ft_env(const char **args, t_shell *shell)
     }
     if (!args[pos])
     {
-        if (TEST_BIT(env.option, ENV_PRINT_NO_NEWLINE))
+        const char **environ = (const char **) ft_dynamic_table_get_table(&env.cpy);
+        if (environ != NULL)
         {
-            if (env.cpy)
+            iter = 0;
+            while (environ[iter] != NULL)
             {
-                iter = 0;
-                while (env.cpy[iter])
+                if (_test_bit(env.option, ENV_PRINT_NO_NEWLINE))
                 {
-                    ft_putstr(env.cpy[iter]);
-                    iter++;
+                    ft_putstr(environ[iter]);
                 }
+                else
+                {
+                    ft_putendl(environ[iter]);
+                }
+                iter++;
             }
-        }
-        else
-        {
-            ft_puttab((const char **) env.cpy);
         }
     }
     else
     {
-        if (TEST_BIT(env.option, ENV_VERBOSE))
+        if (_test_bit(env.option, ENV_VERBOSE))
         {
             iter = 0;
             ft_printf("executing: %s\n", args[pos + iter]);

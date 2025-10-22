@@ -29,7 +29,7 @@ void ft_move_cursor_right(t_shell *shell)
     {
         return;
     }
-    if (TEST_BIT(command->option, COMMAND_HIGHLIGHT_MODE)) /* Mode surlignage actif */
+    if (_test_bit(command->option, COMMAND_HIGHLIGHT_MODE)) /* Mode surlignage actif */
     {
         ft_command_highlight_move_areas(command, SHELL_HIGHLIGHTED_AREA_MOVE_RIGHT, 1);
         ft_shell_command_print(command, &shell->terminal, COMMAND_PRINT_FROM_POS);
@@ -45,7 +45,7 @@ void ft_move_cursor_left(t_shell *shell)
     {
         return;
     }
-    if (TEST_BIT(command->option, COMMAND_HIGHLIGHT_MODE)) /* Mode surlignage actif */
+    if (_test_bit(command->option, COMMAND_HIGHLIGHT_MODE)) /* Mode surlignage actif */
     {
         ft_command_highlight_move_areas(command, SHELL_HIGHLIGHTED_AREA_MOVE_LEFT, 1);
         ft_command_change_pos(command, 1, COMMAND_POS_SUBSTRACT_VALUE, &shell->terminal);
@@ -65,7 +65,7 @@ void ft_move_cursor_end_of_command(t_shell *shell)
     {
         return;
     }
-    if (TEST_BIT(command->option, COMMAND_HIGHLIGHT_MODE)) /* Mode surlignage actif */
+    if (_test_bit(command->option, COMMAND_HIGHLIGHT_MODE)) /* Mode surlignage actif */
     {
         size_t value = command->len - command->pos;
         ft_command_highlight_move_areas(command, SHELL_HIGHLIGHTED_AREA_MOVE_RIGHT, value);
@@ -86,7 +86,7 @@ void ft_move_cursor_start_of_commmand(t_shell *shell)
     {
         return;
     }
-    if (TEST_BIT(command->option, COMMAND_HIGHLIGHT_MODE))
+    if (_test_bit(command->option, COMMAND_HIGHLIGHT_MODE))
     {
         ft_command_highlight_move_areas(command, SHELL_HIGHLIGHTED_AREA_MOVE_LEFT, pos);
         ft_command_change_pos(command,
@@ -128,7 +128,7 @@ void ft_move_word_right(t_shell *shell)
         return;
     }
     value = newpos - command->pos;
-    if (TEST_BIT(command->option, COMMAND_HIGHLIGHT_MODE)) /* Mode surlignage actif */
+    if (_test_bit(command->option, COMMAND_HIGHLIGHT_MODE)) /* Mode surlignage actif */
     {
         ft_command_highlight_move_areas(command, SHELL_HIGHLIGHTED_AREA_MOVE_RIGHT, value);
         ft_shell_command_print(command, &shell->terminal, COMMAND_PRINT_FROM_POS);
@@ -162,7 +162,7 @@ void ft_move_word_left(t_shell *shell)
         return;
     }
     value = command->pos - newpos;
-    if (TEST_BIT(command->option, COMMAND_HIGHLIGHT_MODE)) /* Mode surlignage actif */
+    if (_test_bit(command->option, COMMAND_HIGHLIGHT_MODE)) /* Mode surlignage actif */
     {
         ft_command_highlight_move_areas(command, SHELL_HIGHLIGHTED_AREA_MOVE_LEFT, value);
         ft_command_change_pos(command,
@@ -193,7 +193,7 @@ void ft_move_cursor_up(t_shell *shell)
     newpos = (command->pos > (size_t) terminal->max_column) ?
         (size_t) terminal->max_column :
         command->pos;
-    if (TEST_BIT(command->option, COMMAND_HIGHLIGHT_MODE)) /* Mode surlignage actif */
+    if (_test_bit(command->option, COMMAND_HIGHLIGHT_MODE)) /* Mode surlignage actif */
     {
         ft_command_highlight_move_areas(command, SHELL_HIGHLIGHTED_AREA_MOVE_LEFT, newpos);
         ft_command_change_pos(command, newpos, COMMAND_POS_SUBSTRACT_VALUE, terminal);
@@ -218,7 +218,7 @@ void ft_move_cursor_down(t_shell *shell)
     newpos = (newpos > (size_t) terminal->max_column) ?
         (size_t) terminal->max_column :
         command->len - command->pos;
-    if (TEST_BIT(command->option, COMMAND_HIGHLIGHT_MODE)) /* Mode surlignage actif */
+    if (_test_bit(command->option, COMMAND_HIGHLIGHT_MODE)) /* Mode surlignage actif */
     {
         ft_command_highlight_move_areas(command, SHELL_HIGHLIGHTED_AREA_MOVE_RIGHT, newpos);
         ft_shell_command_print(command, terminal, COMMAND_PRINT_FROM_POS);

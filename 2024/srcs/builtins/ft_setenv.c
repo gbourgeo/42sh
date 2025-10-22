@@ -88,12 +88,18 @@ int ft_setenv(const char **args, t_shell *shell)
         if (ptr != NULL)
         {
             *ptr = '\0';
-            ft_shell_env_add(&shell->environ, args[iter], ptr + 1, UINT32(SHELL_ENV_ADD_PUBLIC) | inter);
+            ft_shell_env_add_s(&shell->environ,
+                               args[iter],
+                               ptr + 1,
+                               _uint32(SHELL_ENV_ADD_PUBLIC) | inter);
             *ptr = '=';
         }
         else if (args[iter + 1] != NULL)
         {
-            ft_shell_env_add(&shell->environ, args[iter], args[iter + 1], UINT32(SHELL_ENV_ADD_PUBLIC) | inter);
+            ft_shell_env_add_s(&shell->environ,
+                               args[iter],
+                               args[iter + 1],
+                               _uint32(SHELL_ENV_ADD_PUBLIC) | inter);
             iter++;
         }
         else

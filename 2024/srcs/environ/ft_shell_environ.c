@@ -10,8 +10,9 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "ft_defines.h"
 #include "ft_shell_environ.h"
+#include "ft_defines.h"
+#include "ft_dynamic_table.h"
 #include "ft_shell_history.h"
 #include "ft_shell_log.h"
 #include "ft_snprintf.h"
@@ -25,17 +26,133 @@
 #include <sys/ttycom.h>
 #include <unistd.h>
 
-static const char *ft_env_get_value(const char *keyname, const char **env);
+/************************************/
+/* FONCTIONS PRIVEES                */
+/************************************/
 
-const char *ft_shell_env_get_value(const char *keyname, t_env *environ)
+static const char *internal_ft_shell_env_get_value(const char *keyname, const t_dyntab *environ);
+static void        internal_ft_shell_env_init_dyntab(t_dyntab *environ, const char **env);
+static void        internal_ft_shell_env_elem_init(void *elem);
+static void        internal_ft_shell_env_elem_dup(void *elem, void *todup);
+static void        internal_ft_shell_env_elem_free(void *elem);
+static char       *internal_ft_shell_env_interpret_escaped_char(const char *value);
+static void        internal_ft_shell_env_add_s_key(t_dyntab *environ, const char *keyname, const char *keyvalue);
+
+/************************************/
+/* FONCTIONS PUBLIQUES              */
+/************************************/
+
+void ft_shell_env_add_envvar(t_dyntab *environ, const char *envvar)
 {
-    const char *ptr = ft_env_get_value(keyname, (const char **) environ->public);
+    size_t      iter = 0;
+    size_t      len  = 0;
+    size_t      size = 0;
+    const char *ptr  = NULL;
+    t_envelem  *elem = NULL;
 
+    ptr = ft_strchr(envvar, '=');
     if (ptr == NULL)
     {
-        ptr = ft_env_get_value(keyname, (const char **) environ->private);
+        return;
     }
-    return (ptr);
+    size = (size_t) (ptr - envvar);
+    /* Recherche dans la table */
+    len  = ft_dynamic_table_get_len(environ);
+    while (iter < len)
+    {
+        elem = (t_envelem *) ft_dynamic_table_get_elem_pos(environ, iter);
+        if (ft_strncmp(elem->envvar, envvar, size) == '=')
+        {
+            free(elem->envvar);
+            elem->envvar = ft_strdup(envvar);
+            return;
+        }
+        iter++;
+    }
+    elem         = (t_envelem *) ft_dynamic_table_new_elem(environ);
+    elem->envvar = ft_strdup(envvar);
+}
+
+void ft_shell_env_add_l(t_env *environ, const char *keyname, long keyvalue, uint32_t options)
+{
+    char value[256] = { 0 };
+
+    ft_snprintf(value, sizeof(value), "%ld", keyvalue);
+    if (_test_bit(options, SHELL_ENV_ADD_PUBLIC))
+    {
+        internal_ft_shell_env_add_s_key(&environ->public, keyname, value);
+    }
+    if (_test_bit(options, SHELL_ENV_ADD_PRIVATE))
+    {
+        internal_ft_shell_env_add_s_key(&environ->private, keyname, value);
+    }
+}
+
+void ft_shell_env_add_s(t_env *environ, const char *keyname, const char *keyvalue, uint32_t options)
+{
+    char *value = (char *) keyvalue;
+
+    if (_test_bit(options, SHELL_ENV_INTERPRETCHARACTER))
+    {
+        value = internal_ft_shell_env_interpret_escaped_char(keyvalue);
+    }
+    if (_test_bit(options, SHELL_ENV_ADD_PUBLIC))
+    {
+        internal_ft_shell_env_add_s_key(&environ->public, keyname, keyvalue);
+    }
+    if (_test_bit(options, SHELL_ENV_ADD_PRIVATE))
+    {
+        internal_ft_shell_env_add_s_key(&environ->private, keyname, keyvalue);
+    }
+    if (_test_bit(options, SHELL_ENV_INTERPRETCHARACTER))
+    {
+        free(value);
+    }
+}
+
+void ft_shell_env_free(t_env *environ)
+{
+    free((void *) environ->bin_path);
+    ft_dynamic_table_free(&environ->public);
+    ft_dynamic_table_free(&environ->private);
+}
+
+t_envelem *ft_shell_env_get_elem(const t_dyntab *environ, const char *keyname)
+{
+    t_envelem *elem = NULL;
+    size_t     pos  = 0;
+    size_t     len  = 0;
+
+    if (keyname == NULL || keyname[0] == '\0')
+    {
+        return (NULL);
+    }
+    len = ft_dynamic_table_get_len(environ);
+    while (pos < len)
+    {
+        elem = ft_dynamic_table_get_elem_pos(environ, pos);
+        if (ft_strcmp(elem->envvar, keyname) == '=')
+        {
+            return (elem);
+        }
+        pos++;
+    }
+    return (NULL);
+}
+
+const char *ft_shell_env_get_value(const char *keyname, const t_env *environ)
+{
+    t_envelem *elem = ft_shell_env_get_elem(&environ->public, keyname);
+
+    if (elem == NULL)
+    {
+        elem = ft_shell_env_get_elem(&environ->private, keyname);
+    }
+    if (elem == NULL)
+    {
+        return (NULL);
+    }
+    return (elem->envvar + ft_strlen(keyname) + 1);
 }
 
 void ft_shell_env_init(t_env *environ, const char **env, const char *shellname)
@@ -47,85 +164,90 @@ void ft_shell_env_init(t_env *environ, const char **env, const char *shellname)
 
     environ->bin_path = ft_strdup("/usr/gnu/bin:/usr/local/bin:/usr/bin:/bin");
     /* Initialisation de l'environement publique */
-    environ->public   = ft_tabdup(env);
-    environ->private = NULL;
+    internal_ft_shell_env_init_dyntab(&environ->public, env);
+    internal_ft_shell_env_init_dyntab(&environ->private, NULL);
     (void) getcwd(cwd, sizeof(cwd));
-    ft_shell_env_add(environ, "PWD", cwd, UINT32(SHELL_ENV_ADD_PUBLIC) | UINT32(SHELL_ENV_ADD_PRIVATE));
-    shlvl = ft_env_get_value("SHLVL", (const char **) environ->public);
-    ft_snprintf(cwd, sizeof(cwd), "%d", ft_atoi(shlvl) + 1);
-    ft_shell_env_add(environ, "SHLVL", cwd, SHELL_ENV_ADD_PUBLIC);
-    ft_shell_env_add(environ, "SHELL", shellname, UINT32(SHELL_ENV_ADD_PUBLIC) | UINT32(SHELL_ENV_ADD_PRIVATE));
+    ft_shell_env_add_s(environ,
+                       "PWD",
+                       cwd,
+                       _uint32(SHELL_ENV_ADD_PUBLIC)
+                           | _uint32(SHELL_ENV_ADD_PRIVATE));
+    shlvl = internal_ft_shell_env_get_value("SHLVL",
+                                            (const t_dyntab *) &environ->public);
+    ft_shell_env_add_l(environ,
+                       "SHLVL",
+                       ft_atoi(shlvl) + 1,
+                       SHELL_ENV_ADD_PUBLIC);
+    ft_shell_env_add_s(environ,
+                       "SHELL",
+                       shellname,
+                       _uint32(SHELL_ENV_ADD_PUBLIC)
+                            | _uint32(SHELL_ENV_ADD_PRIVATE));
     /* Initialisation de l'environement privé  */
     if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &winsize) != -1)
     {
-        ft_snprintf(cwd, sizeof(cwd), "%d", winsize.ws_col);
-        ft_shell_env_add(environ, "COLUMNS", cwd, SHELL_ENV_ADD_PRIVATE);
-        ft_snprintf(cwd, sizeof(cwd), "%d", winsize.ws_row);
-        ft_shell_env_add(environ, "LINES", cwd, SHELL_ENV_ADD_PRIVATE);
+        ft_shell_env_add_l(environ,
+                           "COLUMNS",
+                           (long) winsize.ws_col,
+                           SHELL_ENV_ADD_PRIVATE);
+        ft_shell_env_add_l(environ,
+                           "LINES",
+                           (long) winsize.ws_row,
+                           SHELL_ENV_ADD_PRIVATE);
     }
     passwd = getpwuid(getuid());
     if (passwd != NULL)
     {
-        ft_shell_env_add(environ, "HOME", passwd->pw_dir, SHELL_ENV_ADD_PRIVATE);
-        ft_shell_env_add(environ, "LOGNAME", passwd->pw_name, SHELL_ENV_ADD_PRIVATE);
+        ft_shell_env_add_s(environ,
+                           "HOME",
+                           passwd->pw_dir,
+                           SHELL_ENV_ADD_PRIVATE);
+        ft_shell_env_add_s(environ,
+                           "LOGNAME",
+                           passwd->pw_name,
+                           SHELL_ENV_ADD_PRIVATE);
     }
-    ft_shell_env_add(environ, "TMPDIR", "/tmp", SHELL_ENV_ADD_PRIVATE);
-    ft_shell_env_add(environ, "IFS", " \n\t", SHELL_ENV_ADD_PRIVATE);
-    ft_shell_env_add(environ, "42SH_HISTORY_SIZE", SHELL_HISTORY_MAX_ELEMS, SHELL_ENV_ADD_PRIVATE);
-    ft_shell_env_add(environ, "PS1", "%F{white}%p %F{yellow}%u %F{red}%w %F{white}> ", SHELL_ENV_ADD_PRIVATE);
-}
-
-static char  *ft_shell_env_interpret_escaped_char(const char *value);
-static char **ft_shell_env_add_key(char **env, const char *keyname, const char *keyvalue);
-
-void ft_shell_env_add(t_env *environ, const char *keyname, const char *keyvalue, uint32_t options)
-{
-    char  *value = (char *) keyvalue;
-
-    if (TEST_BIT(options, SHELL_ENV_INTERPRETCHARACTER))
-    {
-        value = ft_shell_env_interpret_escaped_char(keyvalue);
-    }
-    if (TEST_BIT(options, SHELL_ENV_ADD_PUBLIC))
-    {
-        environ->public = ft_shell_env_add_key(environ->public, keyname, keyvalue);
-    }
-    if (TEST_BIT(options, SHELL_ENV_ADD_PRIVATE))
-    {
-        environ->private = ft_shell_env_add_key(environ->private, keyname, keyvalue);
-    }
-    if (TEST_BIT(options, SHELL_ENV_INTERPRETCHARACTER))
-    {
-        free(value);
-    }
-}
-void ft_shell_env_free(t_env *environ)
-{
-    free((void *) environ->bin_path);
-    ft_freetab(&environ->public);
-    ft_freetab(&environ->private);
+    ft_shell_env_add_s(environ,
+                       "TMPDIR",
+                       "/tmp",
+                       SHELL_ENV_ADD_PRIVATE);
+    ft_shell_env_add_s(environ,
+                       "IFS",
+                       " \t\n",
+                       _uint32(SHELL_ENV_ADD_PRIVATE)
+                            | _uint32(SHELL_ENV_INTERPRETCHARACTER));
+    ft_shell_env_add_s(environ,
+                       "42SH_HISTORY_SIZE",
+                       SHELL_HISTORY_MAX_ELEMS,
+                       SHELL_ENV_ADD_PRIVATE);
+    ft_shell_env_add_s(environ,
+                       "PS1",
+                       "%F{white}%p %F{yellow}%u %F{red}%w %F{white}> ",
+                       SHELL_ENV_ADD_PRIVATE);
+    ft_shell_env_add_l(environ,
+                       "PPID",
+                       (long) getppid(),
+                       SHELL_ENV_ADD_PRIVATE);
 }
 
 void ft_shell_env_remove(t_env *environ, const char *keyname)
 {
-    char **env = environ->public;
-    size_t pos = 0;
+    t_envelem *elem = NULL;
+    size_t     pos  = 0;
+    size_t     len  = 0;
 
-    if (env == NULL || keyname == NULL || keyname[0] == '\0')
+    if (keyname == NULL || keyname[0] == '\0')
     {
         return;
     }
-    while (env[pos] != NULL)
+    len = ft_dynamic_table_get_len(&environ->public);
+    while (pos < len)
     {
-        if (ft_strcmp(env[pos], keyname) == '=')
+        elem = ft_dynamic_table_get_elem_pos(&environ->public, pos);
+        if (ft_strcmp(elem->envvar, keyname) == '=')
         {
-            free(env[pos]);
-            while (env[pos + 1] != NULL)
-            {
-                env[pos] = env[pos + 1];
-                pos++;
-            }
-            env[pos] = NULL;
+            ft_dynamic_table_remove_elem_pos(&environ->public, pos);
+            return;
         }
         pos++;
     }
@@ -138,23 +260,91 @@ void ft_shell_env_remove(t_env *environ, const char *keyname)
  * @return La valeur de la variable d'environement si elle existe,
  * NULL autrement.
  */
-static const char *ft_env_get_value(const char *keyname, const char **env)
+static const char *internal_ft_shell_env_get_value(const char *keyname, const t_dyntab *environ)
 {
-    size_t pos = 0;
+    t_envelem *elem = NULL;
+    size_t     pos  = 0;
+    size_t     len  = 0;
 
-    if (env == NULL || keyname == NULL)
+    if (keyname == NULL || keyname[0] == '\0')
     {
         return (NULL);
     }
-    while (env[pos] != NULL)
+    len = ft_dynamic_table_get_len(environ);
+    while (pos < len)
     {
-        if (ft_strcmp(env[pos], keyname) == '=')
+        elem = ft_dynamic_table_get_elem_pos(environ, pos);
+        if (ft_strcmp(elem->envvar, keyname) == '=')
         {
-            return (env[pos] + ft_strlen(keyname) + 1);
+            return (elem->envvar + ft_strlen(keyname) + 1);
         }
         pos++;
     }
     return (NULL);
+}
+
+/**
+ * @brief Initialise une Table Dynamique.
+ * @param environ Table dynamique d'Environnement
+ * @param env     Environnement à dupliquer
+ */
+static void internal_ft_shell_env_init_dyntab(t_dyntab *environ, const char **env)
+{
+    t_envelem *envelem = NULL;
+    size_t     iter    = 0;
+
+    ft_dynamic_table_init(environ,
+                          sizeof(t_envelem),
+                          SHELL_ENVIRON_ELEMS,
+                          internal_ft_shell_env_elem_init,
+                          internal_ft_shell_env_elem_dup,
+                          internal_ft_shell_env_elem_free);
+    if (env == NULL)
+    {
+        return;
+    }
+    while (env[iter] != NULL)
+    {
+        envelem         = (t_envelem *) ft_dynamic_table_new_elem(environ);
+        envelem->envvar = ft_strdup(env[iter]);
+        iter++;
+    }
+}
+
+/**
+ * @brief Initialise un élément de la Table Dynamique
+ * @param elem Elément de la Table Dynamique
+ */
+static void internal_ft_shell_env_elem_init(void *elem)
+{
+    t_envelem *envelem = elem;
+
+    envelem->envvar = NULL;
+}
+
+/**
+ * @brief Duplique un élément d'une table.
+ * @param elem Elément de la Table Dynamique
+ * @param todup Elément à dupliquer
+ */
+static void internal_ft_shell_env_elem_dup(void *elem, void *todup)
+{
+    t_envelem *envelem   = elem;
+    t_envelem *todupelem = todup;
+
+    envelem->envvar = ft_strdup(todupelem->envvar);
+}
+
+/**
+ * @brief Désalloue un élément de la Table Dynamique
+ * @param elem Elément de la Table Dynamique
+ */
+static void internal_ft_shell_env_elem_free(void *elem)
+{
+    t_envelem *envelem = elem;
+
+    free(envelem->envvar);
+    envelem->envvar = NULL;
 }
 
 /**
@@ -164,7 +354,7 @@ static const char *ft_env_get_value(const char *keyname, const char **env)
  * @param[in] value Chaîne de caractères à traiter
  * @return Une nouvelle chaîne de caractères qui devra être free.
  */
-static char *ft_shell_env_interpret_escaped_char(const char *value)
+static char *internal_ft_shell_env_interpret_escaped_char(const char *value)
 {
     char  *ivalue = ft_strdup(value);
     size_t iter   = 0;
@@ -218,57 +408,40 @@ static char *ft_shell_env_interpret_escaped_char(const char *value)
 /**
  * @brief Fonction de recherche d'une variable d'environement.
  *
- * @param env Environement
- * @param key Clé
- * @return L'adresse de la variable d'environement, NULL si pas trouvée.
+ * @param environ Environement
+ * @param keyname Clé
+ * @param keyvalue Valeur
  */
-static char **ft_shell_env_add_key(char **env, const char *keyname, const char *keyvalue)
+static void internal_ft_shell_env_add_s_key(t_dyntab *environ, const char *keyname, const char *keyvalue)
 {
-    size_t iter = 0;
+    size_t     iter = 0;
+    size_t     len  = 0;
+    t_envelem *elem = NULL;
 
     if (keyname == NULL || keyname[0] == '\0')
     {
-        ft_shell_log(SH_LOG_LEVEL_ERR, "Invalid environement variable name given.");
-        return (env);
+        ft_shell_log(SH_LOG_LEVEL_ERR, "Invalid environment variable name given.");
+        return;
     }
-    if (env != NULL)
+    /* Recherche dans la table */
+    len = ft_dynamic_table_get_len(environ);
+    while (iter < len)
     {
-        while (env[iter] != NULL)
+        elem = (t_envelem *) ft_dynamic_table_get_elem_pos(environ, iter);
+        if (ft_strcmp(elem->envvar, keyname) == '=')
         {
-            if (ft_strcmp(env[iter], keyname) == '=')
-            {
-                free(env[iter]);
-                break;
-            }
-            iter++;
+            free(elem->envvar);
+            elem->envvar = (char *) malloc(ft_strlen(keyname) + ft_strlen(keyvalue) + 2);
+            ft_strcpy(elem->envvar, keyname);
+            ft_strcat(elem->envvar, "=");
+            ft_strcat(elem->envvar, keyvalue);
+            return;
         }
+        iter++;
     }
-    if (env == NULL || env[iter] == NULL)
-    {
-        size_t len = ft_tablen((const char **) env) + 2;
-        char **ptr = (char **) malloc(sizeof(char *) * len);
-
-        if (ptr == NULL)
-        {
-            ft_shell_log(SH_LOG_LEVEL_ERR, "Memory error: Adding '%s' to environment failed.", keyname);
-            return (env);
-        }
-        len = 0;
-        if (env != NULL)
-        {
-            while (env[len] != NULL)
-            {
-                ptr[len] = env[len];
-                len++;
-            }
-            free((void *) env);
-        }
-        ptr[len + 1] = NULL;
-        env          = ptr;
-    }
-    env[iter] = (char *) malloc(ft_strlen(keyname) + ft_strlen(keyvalue) + 2);
-    ft_strcpy(env[iter], keyname);
-    ft_strcat(env[iter], "=");
-    ft_strcat(env[iter], keyvalue);
-    return (env);
+    elem         = (t_envelem *) ft_dynamic_table_new_elem(environ);
+    elem->envvar = (char *) malloc(ft_strlen(keyname) + ft_strlen(keyvalue) + 2);
+    ft_strcpy(elem->envvar, keyname);
+    ft_strcat(elem->envvar, "=");
+    ft_strcat(elem->envvar, keyvalue);
 }

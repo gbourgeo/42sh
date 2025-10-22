@@ -1,7 +1,7 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   ft_command_token_debug.c                             :+:      :+:    :+:   */
+/*   ft_command_token_debug.c                           :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: gbourgeo <gbourgeo@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
@@ -10,27 +10,32 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "ft_defines.h"
 #include "ft_printf.h"
-#include "ft_shell.h"
 #include "ft_shell_command.h"
-#include "ft_shell_constants.h"
 #include "ft_shell_log.h"
+#include "ft_shell_terminal.h"
 #include "ft_snprintf.h"
 #include <stdint.h>
 #include <stdlib.h>
 
-static const t_token *token_print(const t_token *first,
-                                  const t_token *last,
-                                  const int     *printedlentable,
-                                  size_t         pos,
-                                  const uint8_t *buffer);
-static const char    *token_type_to_str(e_token_type type);
-static size_t         token_nb(const t_token *token);
+/************************************/
+/* FONCTIONS PRIVEES                */
+/************************************/
+static const t_token *internal_token_print(const t_token *first,
+                                           const t_token *last,
+                                           const int     *printedlentable,
+                                           size_t         pos,
+                                           const uint8_t *buffer);
+static const char    *internal_token_type_to_str(e_token_type type);
+static size_t         internal_token_nb(const t_token *token);
 
-void ft_command_token_debug(const t_token *token, const uint8_t *buffer)
+/************************************/
+/* FONCTIONS PUBLIQUES              */
+/************************************/
+void ft_command_token_debug(const t_token *token,
+                            const uint8_t *buffer,
+                            const t_term  *terminal)
 {
-    extern const t_shell g_shell;
     size_t               nb_tokens       = 0;     /* Nombre de Token */
     size_t               token_pos       = 0;     /* Position du Token */
     const t_token       *first_token     = NULL;  /* Premier Token d'une ligne d'écriture */
@@ -41,13 +46,8 @@ void ft_command_token_debug(const t_token *token, const uint8_t *buffer)
     char                 token_desc[256] = { 0 }; /* Description Token : son type et de sa longueur */
     int                  desc_len        = 0;     /* Longueur de la description */
 
-    // Debug mode off ? on quitte.
-    if (!TEST_BIT(g_shell.options, SHELL_DEBUG_MODE))
-    {
-        return;
-    }
     // Calcul du nombre total de token
-    nb_tokens = token_nb(token);
+    nb_tokens = internal_token_nb(token);
     // Aucun token ? on quitte.
     if (nb_tokens == 0)
     {
@@ -55,7 +55,9 @@ void ft_command_token_debug(const t_token *token, const uint8_t *buffer)
     }
     /* Allocation de la table des grandeurs max */
     printedlentable = malloc(nb_tokens * sizeof(*printedlentable));
-    ft_shell_log(SH_LOG_LEVEL_DBG, "Line: %s", buffer);
+    ft_term_move_cursor(terminal, MOVE_CURSOR_END);
+    ft_term_move_cursor_down(terminal);
+    ft_term_clear_line_and_under(terminal);
     ft_shell_log(SH_LOG_LEVEL_DBG, "Token nb  :  %d", nb_tokens);
     ft_shell_log(SH_LOG_LEVEL_DBG, "Token list:  TYPE (length) | ...");
     first_token = token;
@@ -67,7 +69,7 @@ void ft_command_token_debug(const t_token *token, const uint8_t *buffer)
                                sizeof(token_desc),
                                "%s%s (%d)",
                                (token == first_token) ? "  " : " | ",
-                               token_type_to_str(token->type),
+                               internal_token_type_to_str(token->type),
                                token->head - token->tail);
         /* Récupération de la longueur max */
         if (desc_len > (int) (token->head - token->tail))
@@ -81,12 +83,12 @@ void ft_command_token_debug(const t_token *token, const uint8_t *buffer)
         /* Sauvegarde de la longueur max */
         printedlentable[token_pos] = (token->type == NEWLINE) ? 1 : maxlen;
         /* S'il y a assez d'espace pour imprimer la description */
-        if (printed + maxlen < g_shell.terminal.max_column)
+        if (printed + maxlen < terminal->max_column)
         {
             printed += ft_printf("%*s", -maxlen, token_desc);
             if (token->type == NEWLINE)
             {
-                first_token = token_print(first_token, token->next, printedlentable, first_pos, buffer);
+                first_token = internal_token_print(first_token, token->next, printedlentable, first_pos, buffer);
                 first_pos   = token_pos + 1;
                 printed     = 0;
             }
@@ -99,21 +101,21 @@ void ft_command_token_debug(const t_token *token, const uint8_t *buffer)
             /* On tronque la description */
             if (token == first_token)
             {
-                ft_printf("%*s", -g_shell.terminal.max_column, token_desc);
+                ft_printf("%*s", -terminal->max_column, token_desc);
             }
-            first_token = token_print(first_token, token, printedlentable, first_pos, buffer);
+            first_token = internal_token_print(first_token, token, printedlentable, first_pos, buffer);
             first_pos   = token_pos;
             printed     = 0;
         }
     }
     if (first_token != NULL)
     {
-        token_print(first_token, token, printedlentable, first_pos, buffer);
+        internal_token_print(first_token, token, printedlentable, first_pos, buffer);
     }
     free(printedlentable);
 }
 
-static size_t token_nb(const t_token *token)
+static size_t internal_token_nb(const t_token *token)
 {
     size_t nbr = 0;
 
@@ -125,7 +127,7 @@ static size_t token_nb(const t_token *token)
     return (nbr);
 }
 
-static const t_token *token_print(const t_token *first,
+static const t_token *internal_token_print(const t_token *first,
                                   const t_token *last,
                                   const int     *printedlentable,
                                   size_t         pos,
@@ -156,7 +158,7 @@ static const t_token *token_print(const t_token *first,
     return (last);
 }
 
-static const char *token_type_to_str(e_token_type type)
+static const char *internal_token_type_to_str(e_token_type type)
 {
     switch (type)
     {

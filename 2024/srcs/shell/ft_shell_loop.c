@@ -16,7 +16,6 @@
 #include "ft_shell_constants.h"
 #include "ft_shell_log.h"
 #include "ft_shell_prompt.h"
-#include "ft_shell_terminal.h"
 #include "ft_shell_termkeys.h"
 #include <errno.h>
 #include <stdint.h>
@@ -30,7 +29,7 @@ static void ft_shell_loop_noninteractive(t_shell *shell);
 
 void ft_shell_loop(t_shell *shell)
 {
-    if (TEST_BIT(shell->options, SHELL_INTERACTIVE_MODE))
+    if (_test_bit(shell->options, SHELL_INTERACTIVE_MODE))
     {
         ft_shell_loop_interactive(shell);
     }
@@ -42,8 +41,8 @@ void ft_shell_loop(t_shell *shell)
 
 static void ft_shell_loop_interactive(t_shell *shell)
 {
-    uint8_t key[SHELL_KEY_SIZE] = { 0 };
-    long    ret                 = 1;
+    uint8_t key[SHELL_KEYBOARD_KEYLEN] = { 0 };
+    long    ret                        = 1;
 
     /* Main loop */
     while (shell->quit == 0 && ret > 0)
@@ -55,8 +54,7 @@ static void ft_shell_loop_interactive(t_shell *shell)
         ret = read(shell->fd, key, sizeof(key));
         if (ret < 0)
         {
-            ft_shell_log(SH_LOG_LEVEL_FATAL, "read: %s", strerror(errno));
-            errno = 0;
+            ft_shell_log(SH_LOG_LEVEL_FATAL, "read: %s", ft_shell_strerror());
             break;
         }
         ft_key_analyser(key, (size_t) ret, shell);
@@ -76,23 +74,20 @@ static void ft_shell_loop_noninteractive(t_shell *shell)
     }
     if (filesize < 0)
     {
-        ft_shell_log(SH_LOG_LEVEL_FATAL, "lseek: %s", strerror(errno));
-        errno = 0;
+        ft_shell_log(SH_LOG_LEVEL_FATAL, "lseek: %s", ft_shell_strerror());
         return;
     }
     ft_shell_log(SH_LOG_LEVEL_DBG, "Seek file: %d bytes", filesize);
     line = (uint8_t *) malloc((size_t) filesize);
     if (line == NULL)
     {
-        ft_shell_log(SH_LOG_LEVEL_FATAL, "malloc: %s", strerror(errno));
-        errno = 0;
+        ft_shell_log(SH_LOG_LEVEL_FATAL, "malloc: %s", ft_shell_strerror());
         return;
     }
     ret = lseek(shell->fd, 0L, SEEK_SET);
     if (ret < 0)
     {
-        ft_shell_log(SH_LOG_LEVEL_FATAL, "lseek: %s", strerror(errno));
-        errno = 0;
+        ft_shell_log(SH_LOG_LEVEL_FATAL, "lseek: %s", ft_shell_strerror());
         free(line);
         return;
     }
@@ -105,8 +100,7 @@ static void ft_shell_loop_noninteractive(t_shell *shell)
     ret = read(shell->fd, line, (size_t) filesize);
     if (ret < 0)
     {
-        ft_shell_log(SH_LOG_LEVEL_FATAL, "read: %s", strerror(errno));
-        errno = 0;
+        ft_shell_log(SH_LOG_LEVEL_FATAL, "read: %s", ft_shell_strerror());
         free(line);
         return;
     }

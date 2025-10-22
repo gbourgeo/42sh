@@ -27,14 +27,14 @@ void ft_delete_character_right(t_shell *shell)
     if (command->pos < command->len)
     {
         /* Shell mode intéractif */
-        if (TEST_BIT(shell->options, SHELL_INTERACTIVE_MODE))
+        if (_test_bit(shell->options, SHELL_INTERACTIVE_MODE))
         {
             /* Décalage des zones de textes surlignées */
             ft_command_highlight_move_areas(command, SHELL_HIGHLIGHTED_AREA_REMOVE_CHAR_RIGHT, 1);
         }
         /* Supprime un caractère à la position du buffer */
         ft_shell_command_delete_character(command, COMMAND_REMOVE_CHAR_RIGHT, 1);
-        if (TEST_BIT(shell->options, SHELL_INTERACTIVE_MODE))
+        if (_test_bit(shell->options, SHELL_INTERACTIVE_MODE))
         {
             ft_shell_terminal_calc_end_command_position(&shell->terminal, command->len);
             ft_shell_command_print(shell->command, &shell->terminal, COMMAND_PRINT_FROM_POS);
@@ -49,14 +49,14 @@ void ft_delete_character_left(t_shell *shell)
     if (command->pos > 0)
     {
         /* Shell mode intéractif */
-        if (TEST_BIT(shell->options, SHELL_INTERACTIVE_MODE))
+        if (_test_bit(shell->options, SHELL_INTERACTIVE_MODE))
         {
             /* Décalage des zones de textes surlignées */
             ft_command_highlight_move_areas(command, SHELL_HIGHLIGHTED_AREA_REMOVE_CHAR_LEFT, 1);
         }
         /* Supprime un caractère à gauche de la position du buffer */
         ft_shell_command_delete_character(command, COMMAND_REMOVE_CHAR_LEFT, 1);
-        if (TEST_BIT(shell->options, SHELL_INTERACTIVE_MODE))
+        if (_test_bit(shell->options, SHELL_INTERACTIVE_MODE))
         {
             ft_shell_terminal_calc_current_command_position(&shell->terminal, command->pos);
             ft_shell_terminal_calc_end_command_position(&shell->terminal, command->len);
@@ -86,14 +86,14 @@ void ft_delete_word_right(t_shell *shell)
     if (value > 0)
     {
         /* Shell mode intéractif */
-        if (TEST_BIT(shell->options, SHELL_INTERACTIVE_MODE))
+        if (_test_bit(shell->options, SHELL_INTERACTIVE_MODE))
         {
             /* Décalage des zones de textes surlignées */
             ft_command_highlight_move_areas(command, SHELL_HIGHLIGHTED_AREA_REMOVE_CHAR_RIGHT, value);
         }
         /* Supprime 'value' caractères à gauche de la position du buffer */
         ft_shell_command_delete_character(command, COMMAND_REMOVE_CHAR_RIGHT, value);
-        if (TEST_BIT(shell->options, SHELL_INTERACTIVE_MODE))
+        if (_test_bit(shell->options, SHELL_INTERACTIVE_MODE))
         {
             ft_shell_terminal_calc_current_command_position(&shell->terminal, command->pos);
             ft_shell_terminal_calc_end_command_position(&shell->terminal, command->len);
@@ -124,14 +124,14 @@ void ft_delete_word_left(t_shell *shell)
     if (value > 0)
     {
         /* Shell mode intéractif */
-        if (TEST_BIT(shell->options, SHELL_INTERACTIVE_MODE))
+        if (_test_bit(shell->options, SHELL_INTERACTIVE_MODE))
         {
             /* Décalage des zones de textes surlignées */
             ft_command_highlight_move_areas(command, SHELL_HIGHLIGHTED_AREA_REMOVE_CHAR_LEFT, value);
         }
         /* Supprime un caractère à gauche de la position du buffer */
         ft_shell_command_delete_character(command, COMMAND_REMOVE_CHAR_LEFT, value);
-        if (TEST_BIT(shell->options, SHELL_INTERACTIVE_MODE))
+        if (_test_bit(shell->options, SHELL_INTERACTIVE_MODE))
         {
             ft_shell_terminal_calc_current_command_position(&shell->terminal, command->pos);
             ft_shell_terminal_calc_end_command_position(&shell->terminal, command->len);

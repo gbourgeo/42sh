@@ -46,7 +46,7 @@ static void ft_break_this_signal(int signum)
 
         ft_shell_terminal_get_size(&g_shell.terminal);
         ft_shell_terminal_get_cursor_position(&g_shell.terminal, SET_CURSOR_CURRENT);
-        ft_shell_command_debug((const uint8_t[SHELL_KEY_SIZE]) { 0 }, SHELL_KEY_SIZE);
+        ft_shell_command_debug(NULL, 0);
     }
 }
 
@@ -66,8 +66,7 @@ static void ft_catch_signals(t_shell *shell)
             shell->sigs[iter - 1] = signal(iter, &ft_break_this_signal);
             if (shell->sigs[iter - 1] == SIG_ERR)
             {
-                ft_shell_log(SH_LOG_LEVEL_FATAL, "signal %d: %s", iter, strerror(errno));
-                errno = 0;
+                ft_shell_log(SH_LOG_LEVEL_FATAL, "signal %d: %s", iter, ft_shell_strerror());
             }
         }
         else
@@ -85,8 +84,7 @@ void ft_shell_args_exec(const char **argv, t_shell *shell)
         shell->fd = open(argv[0], O_RDONLY | O_CLOEXEC);
         if (shell->fd == -1)
         {
-            ft_shell_log(SH_LOG_LEVEL_FATAL, "%s: %s", strerror(errno), argv[0]);
-            errno = 0;
+            ft_shell_log(SH_LOG_LEVEL_FATAL, "%s: %s", ft_shell_strerror(), argv[0]);
         }
         else
         {
@@ -95,17 +93,17 @@ void ft_shell_args_exec(const char **argv, t_shell *shell)
     }
     else
     {
-        ASSIGN_BIT(shell->options, SHELL_INTERACTIVE_MODE);
+        _set_bit(shell->options, SHELL_INTERACTIVE_MODE);
         shell->fd = ft_shell_terminal_load(&shell->terminal, ft_shell_env_get_value("TERM", &shell->environ));
         if (shell->fd > 0)
         {
-            ASSIGN_BIT(shell->options, SHELL_TERMATTR_LOADED);
+            _set_bit(shell->options, SHELL_TERMATTR_LOADED);
             // TODO(gbo): Parsing du fichier de conf du shell type .42shrc
-            shell->command_size = ft_shell_history_parse_file(&shell->command,
-                                                              &shell->history,
-                                                              &shell->environ,
-                                                              shell->progname);
-            shell->command      = ft_shell_command_new(NULL, shell->command, NULL, 0);
+            ft_shell_history_parse_file(&shell->command,
+                                        &shell->history,
+                                        &shell->environ,
+                                        shell->progname);
+            shell->command = ft_shell_command_new(NULL, shell->command, NULL, 0);
             ft_shell_prompt_create(&shell->prompt, &shell->environ);
             ft_catch_signals(shell);
         }

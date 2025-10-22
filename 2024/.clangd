@@ -1,12 +1,11 @@
 CompileFlags:
+  # Compilateur utilisé
+  Compiler: /opt/homebrew/opt/llvm/bin/clang
   Add:
-    # Traite tous les fichiers comme écrit en C
-    - "-xc"
-    # Headers
-    - "-I/Users/gbo/work/42sh/2024/includes"
+    - "-xc"                                   # Traite tous les fichiers comme écrit en C
+    - "-I/Users/gbo/work/42sh/2024/includes"  # Headers
     - "-I/Users/gbo/work/libft/includes"
-    # Options de compilation
-    - "-Wall"
+    - "-Wall"                                 # Options de compilation
     - "-Werror"
     - "-Wextra"
     - "-Wpedantic"
@@ -14,9 +13,7 @@ CompileFlags:
     - "-Wundef"
     - "-Wconversion"
     - "-Wunreachable-code"
-    - "-O2" # Recommended optimizations
-  # Compilateur utilisé
-  Compiler: clang
+    - "-O2"
 Index:
   # Indexation des symboles des fichiers
   Background: Build # Skip
@@ -30,6 +27,7 @@ Diagnostics:
   ClangTidy:
     Add: "*"
     Remove:
+      - "bugprone-easily-swappable-parameters"
       - "llvmlibc-restrict-system-libc-headers"
       - "cppcoreguidelines*"
       - "*braces-around-statements"
@@ -42,3 +40,5 @@ Diagnostics:
     FastCheckFilter: Loose
 Hover:
   ShowAKA: true
+# Documentation:
+#   CommentFormat: Doxygen # PlainText, Markdown, Doxygen

@@ -16,12 +16,12 @@
 #include "ft_shell.h"
 #include "ft_shell_environ.h"
 
-typedef enum cd_options
+typedef enum e_cd_options
 {
-    CD_RESOLVE_UNDEFINED = 0x0000,
     CD_RESOLVE_BEFORE    = 0x0001,
     CD_RESOLVE_AFTER     = 0X0002,
-} cd_e;
+    CD_PRINT_PATH        = 0x0004,
+} cdopt_e;
 
 typedef enum echo_options
 {

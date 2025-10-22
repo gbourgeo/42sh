@@ -10,13 +10,13 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "ft_shell_command.h"
 #include "ft_defines.h"
-#include "ft_shell_constants.h"
+#include "ft_shell_command.h"
 #include "ft_shell_terminal.h"
 #include "libft.h"
 #include <stdint.h>
 #include <stdlib.h>
+#include <sys/fcntl.h>
 #include <unistd.h>
 
 /******************************************************************************
@@ -69,63 +69,6 @@ t_cmd *ft_shell_command_new(const uint8_t *line,
     return (cmd);
 }
 
-size_t ft_shell_command_save(t_cmd *command,
-                             size_t historic_size,
-                             long   historic_max_size)
-{
-    uint8_t *line  = command->buffer;
-    t_cmd   *cmd   = NULL;
-    t_cmd   *first = NULL;
-
-    /* Pas de sauvegarde
-     * Si la ligne est vide ou commence par un espace blanc */
-    if (line[0] == '\0' || ft_iswhitespace((char) line[0]))
-    {
-        /* Rien de plus à faire ici */
-        return (historic_size);
-    }
-    first = ft_shell_command_get_first(command);
-    /* Recherche de doublon dans l'historique */
-    cmd   = ft_shell_command_get_last(command);
-    while (cmd->next != NULL)
-    {
-        /* Ligne déjà existante, on place la commande au début de la liste */
-        if (ft_ustrcmp(cmd->origin, line) == 0)
-        {
-            /* Si c'est déjà le premier élément de la liste, rien à faire */
-            if (cmd->next->next == NULL)
-            {
-                return (historic_size);
-            }
-            /* Sinon on insère la commande au début de la liste */
-            if (cmd->prev != NULL)           /* *************************************** */
-            {                                /* ... <-> C <-- CMD <-> A <-> ... -> NULL */
-                cmd->prev->next = cmd->next; /*           \--------->                   */
-            }                                /* ... <-> C <-- CMD --> A <-> ... -> NULL */
-            cmd->next->prev = cmd->prev;     /*           <--------->                   */
-            cmd->next       = first;         /*                   CMD --> FIRST -> NULL */
-            cmd->prev       = first->prev;   /*           ... <-- CMD --> FIRST -> NULL */
-            cmd->prev->next = cmd;           /*           ... <-> CMD --> FIRST -> NULL */
-            first->prev     = cmd;           /*           ... <-> CMD <-> FIRST -> NULL */
-            return (historic_size);          /* *************************************** */
-        }
-        cmd = cmd->next;
-    }
-    /* Pas de doublon, on créé une nouvelle commande */
-    (void) ft_shell_command_new(line,
-                                first->prev,
-                                first,
-                                SHELL_COMMAND_NEW_DUPLICATE_LINE);
-    historic_size++;
-    /* Suppression des éléments en trop */
-    while ((long) historic_size > historic_max_size)
-    {
-        ft_shell_command_remove_last(&first->prev);
-        historic_size--;
-    }
-    return (historic_size);
-}
-
 t_cmd *ft_shell_command_get_first(const t_cmd *command_list)
 {
     while (command_list != NULL)
@@ -152,11 +95,10 @@ t_cmd *ft_shell_command_get_last(const t_cmd *command_list)
     return ((t_cmd *) command_list);
 }
 
-void ft_command_change_pos(
-    t_cmd  *command,
-    size_t  newval,
-    e_posop operation,
-    t_term *terminal)
+void ft_command_change_pos(t_cmd  *command,
+                           size_t  newval,
+                           e_posop operation,
+                           t_term *terminal)
 {
     switch (operation)
     {
@@ -196,13 +138,13 @@ void ft_shell_command_insert_character(t_cmd *command, uint8_t charac)
     command->pos += 1;
     command->len += 1;
     if (command->origin != NULL
-        && !TEST_BIT(command->option, COMMAND_HISTORIC_MODIFIED))
+        && !_test_bit(command->option, COMMAND_HISTORIC_MODIFIED))
     {
-        ASSIGN_BIT(command->option, COMMAND_HISTORIC_MODIFIED);
+        _set_bit(command->option, COMMAND_HISTORIC_MODIFIED);
     }
 }
 
-void ft_shell_command_delete_character(t_cmd *command, e_cmdop operation, size_t size)
+void ft_shell_command_delete_character(t_cmd *command, e_cmdope operation, size_t size)
 {
     uint8_t *buffer = command->buffer;
     size_t   len    = command->len;
@@ -218,9 +160,9 @@ void ft_shell_command_delete_character(t_cmd *command, e_cmdop operation, size_t
     buffer[len] = '\0';
     /* Indique que le buffer d'origine a changé */
     if (command->origin != NULL
-        && !TEST_BIT(command->option, COMMAND_HISTORIC_MODIFIED))
+        && !_test_bit(command->option, COMMAND_HISTORIC_MODIFIED))
     {
-        ASSIGN_BIT(command->option, COMMAND_HISTORIC_MODIFIED);
+        _set_bit(command->option, COMMAND_HISTORIC_MODIFIED);
     }
 }
 
@@ -267,7 +209,7 @@ void ft_shell_command_print(const t_cmd  *command,
         }
     }
     /* Désactive le mode de surlignage */
-    if (TEST_BIT(command->option, COMMAND_HIGHLIGHT_MODE))
+    if (_test_bit(command->option, COMMAND_HIGHLIGHT_MODE))
     {
         ft_term_clear_modes(terminal);
     }
@@ -299,7 +241,7 @@ void ft_shell_command_print(const t_cmd  *command,
     /* Repositionne le curseur à sa position d'origine */
     ft_term_move_cursor(terminal, MOVE_CURSOR_CURRENT);
     /* Réactive le mode de surlignage */
-    if (TEST_BIT(command->option, COMMAND_HIGHLIGHT_MODE))
+    if (_test_bit(command->option, COMMAND_HIGHLIGHT_MODE))
     {
         ft_term_highlight_mode_on(terminal);
     }
@@ -311,7 +253,7 @@ t_cmd *ft_shell_command_reinit(t_cmd *command)
     /* Réinitialisation des Commandes de l'historique */
     while (command->next != NULL)
     {
-        if (TEST_BIT(command->option, COMMAND_HISTORIC_MODIFIED))
+        if (_test_bit(command->option, COMMAND_HISTORIC_MODIFIED))
         {
             command->len = ft_ustrlen(command->origin);
             ft_memcpy(command->buffer, command->origin, command->len + 1);
@@ -369,6 +311,7 @@ static void ft_shell_command_delete(t_cmd *command)
     free((void *) command->buffer);
     ft_command_highlight_remove_all(command->harea);
     ft_command_token_remove_all(command->token);
+    free((void *) command->tokenbuf);
     free(command);
 }
 

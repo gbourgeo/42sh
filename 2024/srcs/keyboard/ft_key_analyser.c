@@ -77,8 +77,8 @@ static size_t ft_key_special(const uint8_t *buffer, size_t iter, size_t size, t_
     };
     size_t jter = 0;
 
-#pragma unroll(LENGTH_OF(keys))
-    while (jter < LENGTH_OF(keys))
+#pragma unroll(_length_of(keys))
+    while (jter < _length_of(keys))
     {
         if (iter + keys[jter].code_len <= size
             && ft_memcmp(keys[jter].code, &buffer[iter], keys[jter].code_len) == 0)
